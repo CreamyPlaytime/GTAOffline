@@ -219,15 +219,10 @@ void RpEvents_Reward(int amount, const char* msg)
             // where x is the current rank -> "s_playerLevel".
             s_xpToNext = (25 * s_playerLevel * s_playerLevel) + (23575 * s_playerLevel) - 1023150;
         } else {
-            // For levels 1 to 98, XP needed to rank up will be gathered from the lookup table.
+            // For levels 1 to 98, XP needed to rank up will be aquired from the lookup table.
             if (s_playerLevel >= 1 && s_playerLevel < (sizeof(xpToNextLevelData) / sizeof(xpToNextLevelData[0]))) {
                 s_xpToNext = xpToNextLevelData[s_playerLevel];
-            } else {
-                // Fallback for levels 1-98 that might somehow go out of array bounds
-                // (e.g., if array is smaller than expected, or s_playerLevel is 0)
-                s_xpToNext = 50; // Defaulting to 50 as a basic fallback if levels go out of bounds.
-                               // This block should ideally not be reached if the array is complete up to 98.
-            }  
+            } 
         }
 
         UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
