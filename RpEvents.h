@@ -18,3 +18,6 @@ int RpEvents_GetLevel();
 int RpEvents_GetXPToNext();
 int RpEvents_RecentRPGain();
 ULONGLONG RpEvents_RecentRPGainTime();
+
+// --- Constants ---
+const int MAX_PLAYER_LEVEL = 8000; // Max player level is rank 8000.
