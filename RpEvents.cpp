@@ -91,7 +91,8 @@ void RpEvents_SetLevel(int v) { s_playerLevel = v; }
 void RpEvents_SetXPToNext(int v) { s_xpToNext = v; }
 
 // XP TABLE ARRAY FOR RANKS < 100
-const int xpToNextLevelData[] = {
+const int xpToNextLevelData[] = 
+{
     0, // Placeholder for index 0 or XP to reach Rank 1
     800, // XP to go from Rank 1 to Rank 2
     2100, // XP to go from Rank 2 to Rank 3
@@ -197,14 +198,17 @@ const int xpToNextLevelData[] = {
 const int MAX_PLAYER_LEVEL = 8000;
 
 // ----- Core XP Reward logic + Leveling System -----
-void RpEvents_Reward(int amount, const char* msg) {
+void RpEvents_Reward(int amount, const char* msg) 
+{
     s_playerXP += amount;
     s_recentRPGain = amount;
     s_recentRPGainTime = GetTickCount64();
 
-    while (s_playerXP >= s_xpToNext) {
+    while (s_playerXP >= s_xpToNext) 
+    {
         // This block is crucial for capping the level
-        if (s_playerLevel >= MAX_PLAYER_LEVEL) {
+        if (s_playerLevel >= MAX_PLAYER_LEVEL) 
+        {
             s_playerXP = 0; // Optionally reset current XP
             s_xpToNext = INT_MAX; // Prevent further rank-ups (requires #include <limits>)
             break; // Exit the loop
@@ -214,23 +218,28 @@ void RpEvents_Reward(int amount, const char* msg) {
         s_playerLevel++;
 
         // Check if the player level is 99 or higher
-        if (s_playerLevel > 98) {
+        if (s_playerLevel > 98) 
+        {
             // Calculate s_xpToNext using function f(x) = 25x^2 + 23575x - 1023150
             // where x is the current rank -> "s_playerLevel".
             s_xpToNext = (25 * s_playerLevel * s_playerLevel) + (23575 * s_playerLevel) - 1023150;
-        } else {
+        } 
+        else 
+        {
             // For levels 1 to 99, XP needed to rank up will be acquired from the lookup table.
-            if (s_playerLevel >= 1 && s_playerLevel < (sizeof(xpToNextLevelData) / sizeof(xpToNextLevelData[0]))) {
+            if (s_playerLevel >= 1 && s_playerLevel < (sizeof(xpToNextLevelData) / sizeof(xpToNextLevelData[0]))) 
+            {
                 s_xpToNext = xpToNextLevelData[s_playerLevel];
             }
         }
-
+        
         UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
         UI::_ADD_TEXT_COMPONENT_STRING("~y~LEVEL UP!");
         UI::_DRAW_NOTIFICATION(false, false);
     }
-
-    if (msg) {
+    
+    if (msg) 
+    {
         UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
         UI::_ADD_TEXT_COMPONENT_STRING((char*)msg);
         UI::_DRAW_NOTIFICATION(false, false);
@@ -373,7 +382,8 @@ void RpEvents_Tick()
 }
 
 // ----- Module Initialization -----
-void RpEvents_Init() {
+void RpEvents_Init() 
+{
     s_playerXP = 0;
     s_playerLevel = 1;
     s_xpToNext = 800;
