@@ -14,6 +14,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <limits>
 
 // --- XP/Rank State ---
 static int s_playerXP = 0, s_playerLevel = 1, s_xpToNext = 800;
