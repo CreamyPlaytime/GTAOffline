@@ -90,7 +90,7 @@ void RpEvents_SetXP(int v) { s_playerXP = v; }
 void RpEvents_SetLevel(int v) { s_playerLevel = v; }
 void RpEvents_SetXPToNext(int v) { s_xpToNext = v; }
 
-// XP TABLE ARRAY FOR RANKS < 98
+// XP TABLE ARRAY FOR RANKS < 100
 const int xpToNextLevelData[] = {
     0, // Placeholder for index 0 or XP to reach Rank 1
     800, // XP to go from Rank 1 to Rank 2
@@ -219,7 +219,7 @@ void RpEvents_Reward(int amount, const char* msg) {
             // where x is the current rank -> "s_playerLevel".
             s_xpToNext = (25 * s_playerLevel * s_playerLevel) + (23575 * s_playerLevel) - 1023150;
         } else {
-            // For levels 1 to 98, XP needed to rank up will be acquired from the lookup table.
+            // For levels 1 to 99, XP needed to rank up will be acquired from the lookup table.
             if (s_playerLevel >= 1 && s_playerLevel < (sizeof(xpToNextLevelData) / sizeof(xpToNextLevelData[0]))) {
                 s_xpToNext = xpToNextLevelData[s_playerLevel];
             }
