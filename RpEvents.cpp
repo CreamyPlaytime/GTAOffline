@@ -194,9 +194,6 @@ const int xpToNextLevelData[] =
     1555800  // XP to go from Rank 98 to Rank 99
 };
 
-// Max player level is rank 8000.
-const int MAX_PLAYER_LEVEL = 8000;
-
 // ----- Core XP Reward logic + Leveling System -----
 void RpEvents_Reward(int amount, const char* msg) 
 {
