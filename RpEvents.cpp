@@ -92,33 +92,33 @@ void RpEvents_SetXPToNext(int v) { s_xpToNext = v; }
 
 // XP TABLE ARRAY FOR RANKS < 98
 const int xpToNextLevelData[] = {
-    0,     // Placeholder for index 0 or XP to reach Rank 1
-    800,   // XP to go from Rank 1 to Rank 2
-    2100,  // XP to go from Rank 2 to Rank 3
-    3800,  // XP to go from Rank 3 to Rank 4
-    6100,  // XP to go from Rank 4 to Rank 5
-    9500,  // XP to go from Rank 5 to Rank 6
-    12500,  // XP to go from Rank 6 to Rank 7
-    16000,  // XP to go from Rank 7 to Rank 8
-    19800,  // XP to go from Rank 8 to Rank 9
-    24000,  // XP to go from Rank 9 to Rank 10
-    28500,  // XP to go from Rank 10 to Rank 11
-    33400,  // XP to go from Rank 11 to Rank 12
-    38700,  // XP to go from Rank 12 to Rank 13
-    44200,  // XP to go from Rank 13 to Rank 14
-    50200,  // XP to go from Rank 14 to Rank 15
-    56400,  // XP to go from Rank 15 to Rank 16
-    63000,  // XP to go from Rank 16 to Rank 17
-    69900,  // XP to go from Rank 17 to Rank 18
-    77100,  // XP to go from Rank 18 to Rank 19
-    84700,  // XP to go from Rank 19 to Rank 20
-    92500,  // XP to go from Rank 20 to Rank 21
-    100700,  // XP to go from Rank 21 to Rank 22
-    109200,  // XP to go from Rank 22 to Rank 23
-    118000,  // XP to go from Rank 23 to Rank 24
-    127100,  // XP to go from Rank 24 to Rank 25
-    136500,  // XP to go from Rank 25 to Rank 26
-    146200,  // XP to go from Rank 26 to Rank 27
+    0, // Placeholder for index 0 or XP to reach Rank 1
+    800, // XP to go from Rank 1 to Rank 2
+    2100, // XP to go from Rank 2 to Rank 3
+    3800, // XP to go from Rank 3 to Rank 4
+    6100, // XP to go from Rank 4 to Rank 5
+    9500, // XP to go from Rank 5 to Rank 6
+    12500, // XP to go from Rank 6 to Rank 7
+    16000, // XP to go from Rank 7 to Rank 8
+    19800, // XP to go from Rank 8 to Rank 9
+    24000, // XP to go from Rank 9 to Rank 10
+    28500, // XP to go from Rank 10 to Rank 11
+    33400, // XP to go from Rank 11 to Rank 12
+    38700, // XP to go from Rank 12 to Rank 13
+    44200, // XP to go from Rank 13 to Rank 14
+    50200, // XP to go from Rank 14 to Rank 15
+    56400, // XP to go from Rank 15 to Rank 16
+    63000, // XP to go from Rank 16 to Rank 17
+    69900, // XP to go from Rank 17 to Rank 18
+    77100, // XP to go from Rank 18 to Rank 19
+    84700, // XP to go from Rank 19 to Rank 20
+    92500, // XP to go from Rank 20 to Rank 21
+    100700, // XP to go from Rank 21 to Rank 22
+    109200, // XP to go from Rank 22 to Rank 23
+    118000, // XP to go from Rank 23 to Rank 24
+    127100, // XP to go from Rank 24 to Rank 25
+    136500, // XP to go from Rank 25 to Rank 26
+    146200, // XP to go from Rank 26 to Rank 27
     156200, // XP to go from Rank 27 to Rank 28
     166500, // XP to go from Rank 28 to Rank 29
     177100, // XP to go from Rank 29 to Rank 30
@@ -189,7 +189,8 @@ const int xpToNextLevelData[] = {
     1443300, // XP to go from Rank 94 to Rank 95
     1471100, // XP to go from Rank 95 to Rank 96
     1499100, // XP to go from Rank 96 to Rank 97
-    1527300  // XP to go from Rank 97 to Rank 98
+    1527300, // XP to go from Rank 97 to Rank 98
+    1555800  // XP to go from Rank 98 to Rank 99
 };
 
 // Max player level is rank 8000.
