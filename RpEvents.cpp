@@ -222,7 +222,7 @@ void RpEvents_Reward(int amount, const char* msg)
         {
             // Calculate s_xpToNext using function f(x) = 25x^2 + 23575x - 1023150
             // where x is the current rank -> "s_playerLevel".
-            s_xpToNext = (25 * s_playerLevel * s_playerLevel) + (23575 * s_playerLevel) - 1023150;
+            s_xpToNext = (25 * ((s_playerLevel + 1) * (s_playerLevel + 1 )) + (23575 * (s_playerLevel + 1)) - 1023150;
         } 
         else 
         {
