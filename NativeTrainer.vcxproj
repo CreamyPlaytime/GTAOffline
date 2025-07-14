@@ -19,6 +19,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Misc.cpp" />
     <ClCompile Include="Money.cpp" />
+    <ClCompile Include="Properties.cpp" />
     <ClCompile Include="RankBar.cpp" />
     <ClCompile Include="RpEvents.cpp" />
     <ClCompile Include="script.cpp" />
@@ -43,6 +44,7 @@
     <ClInclude Include="keyboard.h" />
     <ClInclude Include="Misc.h" />
     <ClInclude Include="Money.h" />
+    <ClInclude Include="Properties.h" />
     <ClInclude Include="RankBar.h" />
     <ClInclude Include="RpEvents.h" />
     <ClInclude Include="script.h" />
