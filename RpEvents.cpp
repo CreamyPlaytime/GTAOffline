@@ -1,20 +1,20 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include "RpEvents.h"
-#include "CharacterCreator.h"
-#include "RankBar.h"
-#include "script.h"
-#include "input.h"
-#include "Money.h"
-#include "Garage.h"
-#include <vector>
 #include <algorithm>
+#include "CharacterCreator.h"
 #include <cstdio>
 #include <cstring>
-#include <map>
-#include <string>
 #include <fstream>
-#include <sstream>
+#include "Garage.h"
+#include "input.h"
 #include <limits>
+#include <map>
+#include "Money.h"
+#include "RankBar.h"
+#include "RpEvents.h"
+#include "script.h"
+#include <sstream>
+#include <string>
+#include <vector>
 
 // --- XP/Rank State ---
 static int s_playerXP = 0, s_playerLevel = 1, s_xpToNext = 800;
@@ -33,7 +33,6 @@ static ULONGLONG s_lastDeliveryTime = 0;
 static bool s_canSellVehicle = false;
 static int s_potentialPayout = 0;
 
-
 // ----- Safe Save/Load Logic -----
 void RpEvents_Save(const char* path)
 {
@@ -41,15 +40,20 @@ void RpEvents_Save(const char* path)
     std::ifstream infile(path);
     std::string line;
 
-    if (infile.is_open()) {
-        while (std::getline(infile, line)) {
+    if (infile.is_open()) 
+    {
+        while (std::getline(infile, line)) 
+        {
             size_t pos = line.find('=');
-            if (pos != std::string::npos) {
+            
+            if (pos != std::string::npos) 
+            {
                 std::string key = line.substr(0, pos);
                 std::string value = line.substr(pos + 1);
                 data[key] = value;
             }
         }
+        
         infile.close();
     }
 
@@ -58,10 +62,14 @@ void RpEvents_Save(const char* path)
     data["xpToNext"] = std::to_string(s_xpToNext);
 
     std::ofstream outfile(path, std::ios::trunc);
-    if (outfile.is_open()) {
-        for (const auto& pair : data) {
+    
+    if (outfile.is_open()) 
+    {
+        for (const auto& pair : data) 
+        {
             outfile << pair.first << "=" << pair.second << std::endl;
         }
+        
         outfile.close();
     }
 }
@@ -71,12 +79,14 @@ void RpEvents_Load(const char* path)
     FILE* f = fopen(path, "r");
     if (!f) return;
     char line[128];
-    while (fgets(line, sizeof(line), f)) {
+    while (fgets(line, sizeof(line), f)) 
+    {
         char* eq = strchr(line, '='); if (!eq) continue; *eq = 0; char* val = eq + 1;
         if (strcmp(line, "xp") == 0) s_playerXP = atoi(val);
         else if (strcmp(line, "level") == 0) s_playerLevel = atoi(val);
         else if (strcmp(line, "xpToNext") == 0) s_xpToNext = atoi(val);
     }
+    
     fclose(f);
 }
 
@@ -244,7 +254,8 @@ void RpEvents_Reward(int amount, const char* msg)
 }
 
 // --- Car Delivery Logic ---
-void RpEvents_CarDeliveryCheck() {
+void RpEvents_CarDeliveryCheck() 
+{
     Ped playerPed = PLAYER::PLAYER_PED_ID();
     Vector3 playerPos = ENTITY::GET_ENTITY_COORDS(playerPed, true);
 
@@ -260,10 +271,13 @@ void RpEvents_CarDeliveryCheck() {
         bool onCooldown = (s_lastDeliveryTime != 0 && currentTime - s_lastDeliveryTime < 60000);
 
         // --- Marker and Cooldown Notification Logic ---
-        if (onCooldown) {
-            if (distanceToZone < DELIVERY_ZONE_RADIUS && PED::IS_PED_IN_ANY_VEHICLE(playerPed, false)) {
+        if (onCooldown) 
+        {
+            if (distanceToZone < DELIVERY_ZONE_RADIUS && PED::IS_PED_IN_ANY_VEHICLE(playerPed, false)) 
+            {
                 static ULONGLONG lastCooldownNotifyTime = 0;
-                if (currentTime - lastCooldownNotifyTime > 5000) {
+                if (currentTime - lastCooldownNotifyTime > 5000) 
+                {
                     char msg[128];
                     int secondsLeft = (60000 - (currentTime - s_lastDeliveryTime)) / 1000;
                     sprintf(msg, "Please wait ~r~%d~s~ seconds for the next delivery.", secondsLeft + 1);
@@ -274,32 +288,39 @@ void RpEvents_CarDeliveryCheck() {
                 }
             }
         }
-        else {
-            if (distanceToZone < 150.0f) {
+        else 
+        {
+            if (distanceToZone < 150.0f) 
+            {
                 GRAPHICS::DRAW_MARKER(1, deliveryX, deliveryY, groundZ - 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, DELIVERY_ZONE_RADIUS, DELIVERY_ZONE_RADIUS, 2.0f, 255, 255, 0, 100, false, true, 2, false, NULL, NULL, false);
             }
         }
-
+        
         // --- Sale Confirmation and Execution Logic ---
         bool canSellNow = false;
         Vehicle currentVeh = 0;
 
-        if (!onCooldown && distanceToZone < DELIVERY_ZONE_RADIUS && PED::IS_PED_IN_ANY_VEHICLE(playerPed, false)) {
+        if (!onCooldown && distanceToZone < DELIVERY_ZONE_RADIUS && PED::IS_PED_IN_ANY_VEHICLE(playerPed, false)) 
+        {
             currentVeh = PED::GET_VEHICLE_PED_IS_IN(playerPed, false);
 
             // --- FIXED: Check if the vehicle is a personal vehicle ---
-            if (Garage_IsVehicleOwned(currentVeh)) {
+            if (Garage_IsVehicleOwned(currentVeh)) 
+            {
                 static ULONGLONG lastOwnedNotifyTime = 0;
-                if (currentTime - lastOwnedNotifyTime > 5000) { // Notify every 5 seconds
+                if (currentTime - lastOwnedNotifyTime > 5000) 
+                { // Notify every 5 seconds
                     UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
                     UI::_ADD_TEXT_COMPONENT_STRING("You cannot sell your personal vehicle.");
                     UI::_DRAW_NOTIFICATION(false, false);
                     lastOwnedNotifyTime = currentTime;
                 }
             }
-            else {
+            else 
+            {
                 // --- Original Sale Logic (if not a personal vehicle) ---
                 int vehClass = VEHICLE::GET_VEHICLE_CLASS(currentVeh);
+                
                 if (ENTITY::DOES_ENTITY_EXIST(currentVeh) &&
                     std::find(s_deliveredVehicles.begin(), s_deliveredVehicles.end(), currentVeh) == s_deliveredVehicles.end() &&
                     vehClass != 13 && vehClass != 14 && vehClass != 15 && vehClass != 16 && vehClass != 18 && vehClass != 21)
@@ -310,8 +331,8 @@ void RpEvents_CarDeliveryCheck() {
             }
         }
 
-
-        if (canSellNow) {
+        if (canSellNow) 
+        {
             // Draw the confirmation prompt
             char sellMsg[128];
             sprintf(sellMsg, "Press ~g~Enter~s~ or ~g~(A)~s~ to sell vehicle for ~g~$%d~s~", s_potentialPayout);
@@ -326,7 +347,8 @@ void RpEvents_CarDeliveryCheck() {
             UI::_DRAW_TEXT(0.5, 0.85);
 
             // Check for confirmation input
-            if (IsKeyJustUp(VK_RETURN) || PadPressed(BTN_A)) {
+            if (IsKeyJustUp(VK_RETURN) || PadPressed(BTN_A)) 
+            {
                 Money_Add(s_potentialPayout);
                 char payoutMsg[128];
                 sprintf(payoutMsg, "~g~Vehicle Delivered. Earned $%d.", s_potentialPayout);
@@ -343,34 +365,40 @@ void RpEvents_CarDeliveryCheck() {
     }
 }
 
-
 // ----- RP Events Tick: Call every frame -----
 void RpEvents_Tick()
 {
     Ped playerPed = PLAYER::PLAYER_PED_ID();
-
     bool nowInVehicle = PED::IS_PED_IN_ANY_VEHICLE(playerPed, false);
-    if (nowInVehicle && !s_inVehicleLastFrame) {
+    
+    if (nowInVehicle && !s_inVehicleLastFrame) 
+    {
         Vehicle veh = PED::GET_VEHICLE_PED_IS_IN(playerPed, false);
-        if (veh != 0 && veh != s_lastVehicle && !Garage_IsVehicleOwned(veh)) {
-            if (VEHICLE::GET_PED_IN_VEHICLE_SEAT(veh, -1) == playerPed) {
-                if ((rand() % 100) < 15) {
+        if (veh != 0 && veh != s_lastVehicle && !Garage_IsVehicleOwned(veh)) 
+        {
+            if (VEHICLE::GET_PED_IN_VEHICLE_SEAT(veh, -1) == playerPed) 
+            {
+                if ((rand() % 100) < 15) 
+                {
                     int cashFound = 50 + (rand() % 451);
                     Money_Add(cashFound);
                     char msg[64];
                     sprintf(msg, "~g~Found $%d in the glovebox.", cashFound);
                     RpEvents_Reward(20, msg);
                 }
-                else {
+                else 
+                {
                     RpEvents_Reward(10, "~b~RP: Stole Car");
                 }
             }
+            
             s_lastVehicle = veh;
         }
     }
+    
     s_inVehicleLastFrame = nowInVehicle;
-
     int wanted = PLAYER::GET_PLAYER_WANTED_LEVEL(PLAYER::PLAYER_ID());
+    
     if (s_lastWantedLevel > 0 && wanted == 0)
         RpEvents_Reward(20 * s_lastWantedLevel, "~p~RP: Evaded Cops");
     s_lastWantedLevel = wanted;
@@ -392,7 +420,8 @@ void RpEvents_Init()
     s_deliveredVehicles.clear();
     s_lastDeliveryTime = 0; // Initialize cooldown timer
 
-    if (s_deliveryBlip != 0 && UI::DOES_BLIP_EXIST(s_deliveryBlip)) {
+    if (s_deliveryBlip != 0 && UI::DOES_BLIP_EXIST(s_deliveryBlip)) 
+    {
         UI::REMOVE_BLIP(&s_deliveryBlip);
     }
 
