@@ -14,9 +14,10 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <limits>
 
 // --- XP/Rank State ---
-static int s_playerXP = 0, s_playerLevel = 1, s_xpToNext = 100;
+static int s_playerXP = 0, s_playerLevel = 1, s_xpToNext = 800;
 static int s_recentRPGain = 0;
 static ULONGLONG s_recentRPGainTime = 0;
 static bool s_inVehicleLastFrame = false;
@@ -89,7 +90,112 @@ void RpEvents_SetXP(int v) { s_playerXP = v; }
 void RpEvents_SetLevel(int v) { s_playerLevel = v; }
 void RpEvents_SetXPToNext(int v) { s_xpToNext = v; }
 
-// ----- Core XP Reward logic -----
+// XP TABLE ARRAY FOR RANKS < 98
+const int xpToNextLevelData[] = {
+    0,     // Placeholder for index 0 or XP to reach Rank 1
+    800,   // XP to go from Rank 1 to Rank 2
+    1300,  // XP to go from Rank 2 to Rank 3
+    1700,  // XP to go from Rank 3 to Rank 4
+    2300,  // XP to go from Rank 4 to Rank 5
+    3400,  // XP to go from Rank 5 to Rank 6
+    3000,  // XP to go from Rank 6 to Rank 7
+    3500,  // XP to go from Rank 7 to Rank 8
+    3800,  // XP to go from Rank 8 to Rank 9
+    4200,  // XP to go from Rank 9 to Rank 10
+    4500,  // XP to go from Rank 10 to Rank 11
+    4900,  // XP to go from Rank 11 to Rank 12
+    5300,  // XP to go from Rank 12 to Rank 13
+    5500,  // XP to go from Rank 13 to Rank 14
+    6000,  // XP to go from Rank 14 to Rank 15
+    6200,  // XP to go from Rank 15 to Rank 16
+    6600,  // XP to go from Rank 16 to Rank 17
+    6900,  // XP to go from Rank 17 to Rank 18
+    7200,  // XP to go from Rank 18 to Rank 19
+    7600,  // XP to go from Rank 19 to Rank 20
+    7800,  // XP to go from Rank 20 to Rank 21
+    8200,  // XP to go from Rank 21 to Rank 22
+    8500,  // XP to go from Rank 22 to Rank 23
+    8800,  // XP to go from Rank 23 to Rank 24
+    9100,  // XP to go from Rank 24 to Rank 25
+    9400,  // XP to go from Rank 25 to Rank 26
+    9700,  // XP to go from Rank 26 to Rank 27
+    10000, // XP to go from Rank 27 to Rank 28
+    10300, // XP to go from Rank 28 to Rank 29
+    10600, // XP to go from Rank 29 to Rank 30
+    10900, // XP to go from Rank 30 to Rank 31
+    11200, // XP to go from Rank 31 to Rank 32
+    11500, // XP to go from Rank 32 to Rank 33
+    11700, // XP to go from Rank 33 to Rank 34
+    12100, // XP to go from Rank 34 to Rank 35
+    12300, // XP to go from Rank 35 to Rank 36
+    12600, // XP to go from Rank 36 to Rank 37
+    12900, // XP to go from Rank 37 to Rank 38
+    13200, // XP to go from Rank 38 to Rank 39
+    13500, // XP to go from Rank 39 to Rank 40
+    13700, // XP to go from Rank 40 to Rank 41
+    14100, // XP to go from Rank 41 to Rank 42
+    14200, // XP to go from Rank 42 to Rank 43
+    14600, // XP to go from Rank 43 to Rank 44
+    14900, // XP to go from Rank 44 to Rank 45
+    15100, // XP to go from Rank 45 to Rank 46
+    15400, // XP to go from Rank 46 to Rank 47
+    15600, // XP to go from Rank 47 to Rank 48
+    16000, // XP to go from Rank 48 to Rank 49
+    16200, // XP to go from Rank 49 to Rank 50
+    16400, // XP to go from Rank 50 to Rank 51
+    16800, // XP to go from Rank 51 to Rank 52
+    17000, // XP to go from Rank 52 to Rank 53
+    17300, // XP to go from Rank 53 to Rank 54
+    17500, // XP to go from Rank 54 to Rank 55
+    17800, // XP to go from Rank 55 to Rank 56
+    18000, // XP to go from Rank 56 to Rank 57
+    18400, // XP to go from Rank 57 to Rank 58
+    18500, // XP to go from Rank 58 to Rank 59
+    18900, // XP to go from Rank 59 to Rank 60
+    19100, // XP to go from Rank 60 to Rank 61
+    19300, // XP to go from Rank 61 to Rank 62
+    19600, // XP to go from Rank 62 to Rank 63
+    19900, // XP to go from Rank 63 to Rank 64
+    20100, // XP to go from Rank 64 to Rank 65
+    20400, // XP to go from Rank 65 to Rank 66
+    20700, // XP to go from Rank 66 to Rank 67
+    20900, // XP to go from Rank 67 to Rank 68
+    21100, // XP to go from Rank 68 to Rank 69
+    21400, // XP to go from Rank 69 to Rank 70
+    21700, // XP to go from Rank 70 to Rank 71
+    21900, // XP to go from Rank 71 to Rank 72
+    22100, // XP to go from Rank 72 to Rank 73
+    22400, // XP to go from Rank 73 to Rank 74
+    22700, // XP to go from Rank 74 to Rank 75
+    22900, // XP to go from Rank 75 to Rank 76
+    23100, // XP to go from Rank 76 to Rank 77
+    23400, // XP to go from Rank 77 to Rank 78
+    23700, // XP to go from Rank 78 to Rank 79
+    23900, // XP to go from Rank 79 to Rank 80
+    24100, // XP to go from Rank 80 to Rank 81
+    24400, // XP to go from Rank 81 to Rank 82
+    24600, // XP to go from Rank 82 to Rank 83
+    24900, // XP to go from Rank 83 to Rank 84
+    25100, // XP to go from Rank 84 to Rank 85
+    25400, // XP to go from Rank 85 to Rank 86
+    25600, // XP to go from Rank 86 to Rank 87
+    25800, // XP to go from Rank 87 to Rank 88
+    26100, // XP to go from Rank 88 to Rank 89
+    26400, // XP to go from Rank 89 to Rank 90
+    26500, // XP to go from Rank 90 to Rank 91
+    26800, // XP to go from Rank 91 to Rank 92
+    27100, // XP to go from Rank 92 to Rank 93
+    27300, // XP to go from Rank 93 to Rank 94
+    27500, // XP to go from Rank 94 to Rank 95
+    27800, // XP to go from Rank 95 to Rank 96
+    28000, // XP to go from Rank 96 to Rank 97
+    28200  // XP to go from Rank 97 to Rank 98
+};
+
+// Max player level is rank 8000.
+const int MAX_PLAYER_LEVEL = 8000;
+
+// ----- Core XP Reward logic + Leveling System -----
 void RpEvents_Reward(int amount, const char* msg)
 {
     s_playerXP += amount;
@@ -97,16 +203,30 @@ void RpEvents_Reward(int amount, const char* msg)
     s_recentRPGainTime = GetTickCount64();
 
     while (s_playerXP >= s_xpToNext) {
-        s_playerXP -= s_xpToNext;
-        s_playerLevel++;
-        s_xpToNext += 50;
+                // This block is crucial for capping the level
+        if (s_playerLevel >= MAX_PLAYER_LEVEL) {
+            s_playerXP = 0; // Optionally reset current XP
+            s_xpToNext = INT_MAX; // Prevent further rank-ups (requires #include <limits>)
+            break; // Exit the loop
+        }
+        
+            s_playerXP -= s_xpToNext;
+            s_playerLevel++;
+
+        // Check if the player level is 99 or higher
+        if (s_playerLevel > 98) {
+            // Calculate s_xpToNext using function f(x) = 25x^2 + 23575x - 1023150
+            // where x is the current rank -> "s_playerLevel".
+            s_xpToNext = (25 * s_playerLevel * s_playerLevel) + (23575 * s_playerLevel) - 1023150;
+        } else {
+            // For levels 1 to 98, XP needed to rank up will be aquired from the lookup table.
+            if (s_playerLevel >= 1 && s_playerLevel < (sizeof(xpToNextLevelData) / sizeof(xpToNextLevelData[0]))) {
+                s_xpToNext = xpToNextLevelData[s_playerLevel];
+            } 
+        }
+
         UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
         UI::_ADD_TEXT_COMPONENT_STRING("~y~LEVEL UP!");
-        UI::_DRAW_NOTIFICATION(false, false);
-    }
-    if (msg) {
-        UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
-        UI::_ADD_TEXT_COMPONENT_STRING((char*)msg);
         UI::_DRAW_NOTIFICATION(false, false);
     }
 }
@@ -251,7 +371,7 @@ void RpEvents_Init()
 {
     s_playerXP = 0;
     s_playerLevel = 1;
-    s_xpToNext = 100;
+    s_xpToNext = 800;
     s_recentRPGain = 0;
     s_recentRPGainTime = 0;
     s_inVehicleLastFrame = false;

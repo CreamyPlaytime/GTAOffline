@@ -66,76 +66,76 @@ void GunStore_Init() {
     // Pistols
     WeaponCategory pistols;
     pistols.name = "Pistols";
-    pistols.weapons.push_back({ "Pistol", GAMEPLAY::GET_HASH_KEY("WEAPON_PISTOL"), 600, 1 });
-    pistols.weapons.push_back({ "Combat Pistol", GAMEPLAY::GET_HASH_KEY("WEAPON_COMBATPISTOL"), 1200, 5 });
-    pistols.weapons.push_back({ "AP Pistol", GAMEPLAY::GET_HASH_KEY("WEAPON_APPISTOL"), 5000, 15 });
-    pistols.weapons.push_back({ "Pistol .50", GAMEPLAY::GET_HASH_KEY("WEAPON_PISTOL50"), 7500, 22 });
-    pistols.weapons.push_back({ "SNS Pistol", GAMEPLAY::GET_HASH_KEY("WEAPON_SNSPISTOL"), 1000, 3 });
-    pistols.weapons.push_back({ "Heavy Pistol", GAMEPLAY::GET_HASH_KEY("WEAPON_HEAVYPISTOL"), 3500, 10 });
+    pistols.weapons.push_back({ "Pistol", GAMEPLAY::GET_HASH_KEY("WEAPON_PISTOL"), 800, 1 });
+    pistols.weapons.push_back({ "Pistol .50", GAMEPLAY::GET_HASH_KEY("WEAPON_PISTOL50"), 3900, 1 });
+    pistols.weapons.push_back({ "Combat Pistol", GAMEPLAY::GET_HASH_KEY("WEAPON_COMBATPISTOL"), 3200, 9 });
+    pistols.weapons.push_back({ "AP Pistol", GAMEPLAY::GET_HASH_KEY("WEAPON_APPISTOL"), 5000, 33 });
+    pistols.weapons.push_back({ "SNS Pistol", GAMEPLAY::GET_HASH_KEY("WEAPON_SNSPISTOL"), 2750, 1 }); // lock behind requirements in future?
+    pistols.weapons.push_back({ "Heavy Pistol", GAMEPLAY::GET_HASH_KEY("WEAPON_HEAVYPISTOL"), 3750, 1 }); // ---
     g_weaponCategories.push_back(pistols);
 
     // SMGs
     WeaponCategory smgs;
     smgs.name = "Machine Guns";
-    smgs.weapons.push_back({ "Micro SMG", GAMEPLAY::GET_HASH_KEY("WEAPON_MICROSMG"), 2500, 8 });
-    smgs.weapons.push_back({ "SMG", GAMEPLAY::GET_HASH_KEY("WEAPON_SMG"), 7500, 12 });
-    smgs.weapons.push_back({ "Assault SMG", GAMEPLAY::GET_HASH_KEY("WEAPON_ASSAULTSMG"), 12500, 20 });
-    smgs.weapons.push_back({ "Combat PDW", GAMEPLAY::GET_HASH_KEY("WEAPON_COMBATPDW"), 15000, 28 });
-    smgs.weapons.push_back({ "MG", GAMEPLAY::GET_HASH_KEY("WEAPON_MG"), 14000, 30 });
-    smgs.weapons.push_back({ "Combat MG", GAMEPLAY::GET_HASH_KEY("WEAPON_COMBATMG"), 18000, 40 });
+    smgs.weapons.push_back({ "Micro SMG", GAMEPLAY::GET_HASH_KEY("WEAPON_MICROSMG"), 3750, 5 });
+    smgs.weapons.push_back({ "SMG", GAMEPLAY::GET_HASH_KEY("WEAPON_SMG"), 7500, 11 });
+    smgs.weapons.push_back({ "Assault SMG", GAMEPLAY::GET_HASH_KEY("WEAPON_ASSAULTSMG"), 12550, 29 });
+    smgs.weapons.push_back({ "MG", GAMEPLAY::GET_HASH_KEY("WEAPON_MG"), 13500, 50 });
+    smgs.weapons.push_back({ "Combat MG", GAMEPLAY::GET_HASH_KEY("WEAPON_COMBATMG"), 14800, 80 });
+    smgs.weapons.push_back({ "Combat PDW", GAMEPLAY::GET_HASH_KEY("WEAPON_COMBATPDW"), 15000, 1 }); // ---
     g_weaponCategories.push_back(smgs);
 
     // Rifles
     WeaponCategory rifles;
     rifles.name = "Assault Rifles";
-    rifles.weapons.push_back({ "Assault Rifle", GAMEPLAY::GET_HASH_KEY("WEAPON_ASSAULTRIFLE"), 10000, 18 });
-    rifles.weapons.push_back({ "Carbine Rifle", GAMEPLAY::GET_HASH_KEY("WEAPON_CARBINERIFLE"), 15000, 25 });
-    rifles.weapons.push_back({ "Advanced Rifle", GAMEPLAY::GET_HASH_KEY("WEAPON_ADVANCEDRIFLE"), 22000, 35 });
-    rifles.weapons.push_back({ "Special Carbine", GAMEPLAY::GET_HASH_KEY("WEAPON_SPECIALCARBINE"), 18000, 26 });
-    rifles.weapons.push_back({ "Bullpup Rifle", GAMEPLAY::GET_HASH_KEY("WEAPON_BULLPUPRIFLE"), 16500, 24 });
+    rifles.weapons.push_back({ "Assault Rifle", GAMEPLAY::GET_HASH_KEY("WEAPON_ASSAULTRIFLE"), 8550, 24 });
+    rifles.weapons.push_back({ "Carbine Rifle", GAMEPLAY::GET_HASH_KEY("WEAPON_CARBINERIFLE"), 13000, 42 });
+    rifles.weapons.push_back({ "Advanced Rifle", GAMEPLAY::GET_HASH_KEY("WEAPON_ADVANCEDRIFLE"), 14250, 70 });
+    rifles.weapons.push_back({ "Special Carbine", GAMEPLAY::GET_HASH_KEY("WEAPON_SPECIALCARBINE"), 14750, 1 }); // ---
+    rifles.weapons.push_back({ "Bullpup Rifle", GAMEPLAY::GET_HASH_KEY("WEAPON_BULLPUPRIFLE"), 14500, 1 }); // ---
     g_weaponCategories.push_back(rifles);
 
     // Shotguns
     WeaponCategory shotguns;
     shotguns.name = "Shotguns";
-    shotguns.weapons.push_back({ "Pump Shotgun", GAMEPLAY::GET_HASH_KEY("WEAPON_PUMPSHOTGUN"), 3500, 10 });
-    shotguns.weapons.push_back({ "Sawed-Off Shotgun", GAMEPLAY::GET_HASH_KEY("WEAPON_SAWNOFFSHOTGUN"), 2000, 6 });
-    shotguns.weapons.push_back({ "Assault Shotgun", GAMEPLAY::GET_HASH_KEY("WEAPON_ASSAULTSHOTGUN"), 10000, 30 });
-    shotguns.weapons.push_back({ "Heavy Shotgun", GAMEPLAY::GET_HASH_KEY("WEAPON_HEAVYSHOTGUN"), 12000, 32 });
+    shotguns.weapons.push_back({ "Pump Shotgun", GAMEPLAY::GET_HASH_KEY("WEAPON_PUMPSHOTGUN"), 3500, 17 });
+    shotguns.weapons.push_back({ "Sawed-Off Shotgun", GAMEPLAY::GET_HASH_KEY("WEAPON_SAWNOFFSHOTGUN"), 2000, 1 }); // --- lock in future and then make it free?
+    shotguns.weapons.push_back({ "Assault Shotgun", GAMEPLAY::GET_HASH_KEY("WEAPON_ASSAULTSHOTGUN"), 10000, 37 });
+    shotguns.weapons.push_back({ "Heavy Shotgun", GAMEPLAY::GET_HASH_KEY("WEAPON_HEAVYSHOTGUN"), 13550, 1 }); // --
     g_weaponCategories.push_back(shotguns);
 
     // Sniper Rifles
     WeaponCategory snipers;
     snipers.name = "Sniper Rifles";
     snipers.weapons.push_back({ "Sniper Rifle", GAMEPLAY::GET_HASH_KEY("WEAPON_SNIPERRIFLE"), 20000, 21 });
-    snipers.weapons.push_back({ "Heavy Sniper", GAMEPLAY::GET_HASH_KEY("WEAPON_HEAVYSNIPER"), 38000, 50 });
+    snipers.weapons.push_back({ "Heavy Sniper", GAMEPLAY::GET_HASH_KEY("WEAPON_HEAVYSNIPER"), 38150, 90 });
     g_weaponCategories.push_back(snipers);
 
     // Heavy Weapons
     WeaponCategory heavy;
     heavy.name = "Heavy Weapons";
-    heavy.weapons.push_back({ "Grenade Launcher", GAMEPLAY::GET_HASH_KEY("WEAPON_GRENADELAUNCHER"), 35000, 45 });
-    heavy.weapons.push_back({ "RPG", GAMEPLAY::GET_HASH_KEY("WEAPON_RPG"), 75000, 60 });
-    heavy.weapons.push_back({ "Minigun", GAMEPLAY::GET_HASH_KEY("WEAPON_MINIGUN"), 50000, 70 });
+    heavy.weapons.push_back({ "Grenade Launcher", GAMEPLAY::GET_HASH_KEY("WEAPON_GRENADELAUNCHER"), 32400, 60 });
+    heavy.weapons.push_back({ "RPG", GAMEPLAY::GET_HASH_KEY("WEAPON_RPG"), 26250, 100 });
+    heavy.weapons.push_back({ "Minigun", GAMEPLAY::GET_HASH_KEY("WEAPON_MINIGUN"), 47000, 120 });
     g_weaponCategories.push_back(heavy);
 
     // Thrown Weapons
     WeaponCategory thrown;
     thrown.name = "Thrown";
-    thrown.weapons.push_back({ "Grenade", GAMEPLAY::GET_HASH_KEY("WEAPON_GRENADE"), 250, 5 });
-    thrown.weapons.push_back({ "Sticky Bomb", GAMEPLAY::GET_HASH_KEY("WEAPON_STICKYBOMB"), 600, 12 });
-    thrown.weapons.push_back({ "Proximity Mine", GAMEPLAY::GET_HASH_KEY("WEAPON_PROXMINE"), 1000, 18 });
-    thrown.weapons.push_back({ "Molotov", GAMEPLAY::GET_HASH_KEY("WEAPON_MOLOTOV"), 500, 10 });
+    thrown.weapons.push_back({ "Grenade", GAMEPLAY::GET_HASH_KEY("WEAPON_GRENADE"), 250, 15 });
+    thrown.weapons.push_back({ "Sticky Bomb", GAMEPLAY::GET_HASH_KEY("WEAPON_STICKYBOMB"), 600, 19 });
+    thrown.weapons.push_back({ "Molotov", GAMEPLAY::GET_HASH_KEY("WEAPON_MOLOTOV"), 200, 31 });
+    thrown.weapons.push_back({ "Proximity Mine", GAMEPLAY::GET_HASH_KEY("WEAPON_PROXMINE"), 1000, 1 }); // --
     g_weaponCategories.push_back(thrown);
 
     // Melee
     WeaponCategory melee;
     melee.name = "Melee";
-    melee.weapons.push_back({ "Knife", GAMEPLAY::GET_HASH_KEY("WEAPON_KNIFE"), 200, 1 });
-    melee.weapons.push_back({ "Nightstick", GAMEPLAY::GET_HASH_KEY("WEAPON_NIGHTSTICK"), 100, 1 });
+    melee.weapons.push_back({ "Knife", GAMEPLAY::GET_HASH_KEY("WEAPON_KNIFE"), 400, 1 });
     melee.weapons.push_back({ "Hammer", GAMEPLAY::GET_HASH_KEY("WEAPON_HAMMER"), 500, 1 });
-    melee.weapons.push_back({ "Bat", GAMEPLAY::GET_HASH_KEY("WEAPON_BAT"), 300, 1 });
-    melee.weapons.push_back({ "Crowbar", GAMEPLAY::GET_HASH_KEY("WEAPON_CROWBAR"), 400, 1 });
+    melee.weapons.push_back({ "Nightstick", GAMEPLAY::GET_HASH_KEY("WEAPON_NIGHTSTICK"), 400, 3 });
+    melee.weapons.push_back({ "Bat", GAMEPLAY::GET_HASH_KEY("WEAPON_BAT"), 300, 1 }); // --- and make free
+    melee.weapons.push_back({ "Crowbar", GAMEPLAY::GET_HASH_KEY("WEAPON_CROWBAR"), 400, 1 }); // --- and make free
     g_weaponCategories.push_back(melee);
 
     GunStore_Load();
