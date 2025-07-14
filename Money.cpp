@@ -98,7 +98,6 @@ void Money_Draw() {
     sprintf(buf, "$%d", g_money);
 
     float x = 0.88f, y = 0.045f, scale = 0.63f;
-    GRAPHICS::DRAW_RECT(x + 0.06f, y + 0.017f, 0.17f, 0.054f, 8, 23, 16, 210);
 
     int r = (GetTickCount() - g_lastPickupTime < 1800) ? 32 : 0;
     int g = (GetTickCount() - g_lastPickupTime < 1800) ? 255 : 220;
