@@ -17,6 +17,8 @@ bool PadHeld(int btn); // Defined in input.cpp
 #define BTN_RB       0x0200
 #define BTN_LS       0x0587
 #define BTN_RS       0x0588
+#define BTN_BACK     0x0020 // Added BTN_BACK
+#define BTN_START    0x0010 // Added BTN_START
 #define DPAD_UP      0x0001
 #define DPAD_DOWN    0x0002
 #define DPAD_LEFT    0x0004
@@ -77,18 +79,19 @@ struct InputRepeatState {
 inline bool IsKeyJustUp(int vkey) {
     static InputRepeatState state[16];
     int idx = 0;
-    switch (vkey) {
-    case VK_NUMPAD4: idx = 0; break;
-    case VK_NUMPAD6: idx = 1; break;
-    case VK_NUMPAD8: idx = 2; break;
-    case VK_NUMPAD2: idx = 3; break;
-    case VK_F4:      idx = 4; break;
-    case VK_NUMPAD5: idx = 5; break;
-    case VK_NUMPAD7: idx = 6; break;
-    case VK_NUMPAD9: idx = 7; break;
-    case VK_NUMPAD0: idx = 8; break;
-    default:         idx = 15; break;
-    }
+    // Simplified index mapping for common keys used in menu
+    // You might need a more robust mapping if you use many keys for repeat logic
+    if (vkey == VK_NUMPAD4) idx = 0;
+    else if (vkey == VK_NUMPAD6) idx = 1;
+    else if (vkey == VK_NUMPAD8) idx = 2;
+    else if (vkey == VK_NUMPAD2) idx = 3;
+    else if (vkey == VK_F4)      idx = 4;
+    else if (vkey == VK_NUMPAD5) idx = 5;
+    else if (vkey == VK_NUMPAD7) idx = 6;
+    else if (vkey == VK_NUMPAD9) idx = 7;
+    else if (vkey == VK_NUMPAD0) idx = 8;
+    else idx = 15; // Default for other keys
+
     bool held = KeyHeld(vkey);
     if (held) {
         if (!state[idx].wasHeld) {
@@ -129,6 +132,12 @@ inline bool PadPressed(int btn) {
     case BTN_B:      idx = 5; break;
     case BTN_LB:     idx = 6; break;
     case BTN_RB:     idx = 7; break;
+    case BTN_BACK:   idx = 8; break; // Added index for BTN_BACK
+    case BTN_START:  idx = 9; break; // Added index for BTN_START
+    case BTN_LS:     idx = 10; break;
+    case BTN_RS:     idx = 11; break;
+    case BTN_X:      idx = 12; break;
+    case BTN_Y:      idx = 13; break;
     default:         idx = 15; break;
     }
     bool held = PadHeld(btn);

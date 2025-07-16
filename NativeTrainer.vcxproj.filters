@@ -18,8 +18,9 @@
     <ClCompile Include="Garage.cpp" />
     <ClCompile Include="GunStore.cpp" />
     <ClCompile Include="Credits.cpp" />
-    <ClCompile Include="Source.cpp" />
     <ClCompile Include="CarExport.cpp" />
+    <ClCompile Include="Properties.cpp" />
+    <ClCompile Include="Settings.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="script.h" />
@@ -51,6 +52,8 @@
     <ClInclude Include="GunStore.h" />
     <ClInclude Include="Credits.h" />
     <ClInclude Include="Header.h" />
+    <ClInclude Include="Properties.h" />
+    <ClInclude Include="Settings.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="include">

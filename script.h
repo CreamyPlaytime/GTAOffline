@@ -26,6 +26,7 @@ extern const float MENU_Y;
 extern const float MENU_W;
 extern const float MENU_H;
 // --- Shared UI Color Palette (Declarations) ---
+// These are now const again, as they will not be changed dynamically
 extern const RGBA BG_COLOR;
 extern const RGBA HEADER_COLOR;
 extern const RGBA OPTION_COLOR;
@@ -45,5 +46,14 @@ inline void ClampMenuIndex(int& idx, int max) {
 void DrawMenuHeader(const char* text, float x, float y, float w);
 void DrawMenuOption(const char* text, float x, float y, float w, float h, bool selected);
 void DrawPairedMenuOption(const char* label, const char* value, float x, float y, float w, float h, bool selected);
+
+// Global menu state variables - declared extern here
+extern int menuCategory;
+extern int menuIndex;
+extern bool menuOpen;
+extern int inputDelayFrames;
+
+// Forward declaration of Category enum so Settings.cpp can use CAT_MAIN
+enum Category;
 
 void ScriptMain();

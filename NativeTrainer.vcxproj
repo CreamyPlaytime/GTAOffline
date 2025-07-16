@@ -24,6 +24,7 @@
     <ClCompile Include="RpEvents.cpp" />
     <ClCompile Include="script.cpp" />
     <ClCompile Include="Self.cpp" />
+    <ClCompile Include="Settings.cpp" />
     <ClCompile Include="Vehicle.cpp" />
     <ClCompile Include="Weapons.cpp" />
   </ItemGroup>
@@ -48,6 +49,7 @@
     <ClInclude Include="RpEvents.h" />
     <ClInclude Include="script.h" />
     <ClInclude Include="Self.h" />
+    <ClInclude Include="Settings.h" />
     <ClInclude Include="Vehicle.h" />
     <ClInclude Include="Weapons.h" />
   </ItemGroup>
