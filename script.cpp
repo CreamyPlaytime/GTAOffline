@@ -195,6 +195,9 @@ void SaveCurrentCharacterData() {
         GunStore_Save(); // No path argument, uses its internal default
         Properties_Save(PROTAGONIST_PROPERTIES_FILE);
     }
+    // NEW: Update g_lastActiveCharacterIsCustom based on the character just saved
+    g_lastActiveCharacterIsCustom = g_isCustomCharacterActive;
+    SaveSettings(); // Save settings to persist g_lastActiveCharacterIsCustom
 
     UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
     UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("Game Saved."));
@@ -202,6 +205,10 @@ void SaveCurrentCharacterData() {
 }
 
 void LoadCustomCharacterData() {
+    // NEW: Set g_isCustomCharacterActive before resetting properties and loading
+    g_isCustomCharacterActive = true;
+    Properties_Reset(); // Reset properties before loading character-specific properties
+
     if (!RequestModel(GAMEPLAY::GET_HASH_KEY("mp_m_freemode_01"))) { // Always load a freemode model for custom char
         UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
         UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~r~Failed to load custom character model."));
@@ -210,7 +217,6 @@ void LoadCustomCharacterData() {
     }
     PLAYER::SET_PLAYER_MODEL(PLAYER::PLAYER_ID(), GAMEPLAY::GET_HASH_KEY("mp_m_freemode_01")); // Default to male freemode for loading
     g_activePlayerModel = GAMEPLAY::GET_HASH_KEY("mp_m_freemode_01"); // Update active model
-    g_isCustomCharacterActive = true;
 
     CharacterCreator_Load(characterFile); // This will re-apply the correct gender/model/appearance
     Money_Load(playerStatsFile);
@@ -220,14 +226,23 @@ void LoadCustomCharacterData() {
     Properties_Load(propertiesFile);
 
     CharacterCreator_Apply(); // Apply character features after loading
+    // NEW: Update g_lastActiveCharacterIsCustom and save settings
+    g_lastActiveCharacterIsCustom = true;
+    SaveSettings();
+
     UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
     UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("Custom Character Loaded!"));
     UI::_DRAW_NOTIFICATION(false, true);
 }
 
 void LoadProtagonistData(Hash protagonistModelHash) {
-    // This function will now ONLY load data, not change the model.
-    // The protagonistModelHash argument is kept for consistency but its direct use for model setting is removed.
+    // Set g_isCustomCharacterActive to false, as we're loading protagonist data
+    g_isCustomCharacterActive = false;
+    Properties_Reset(); // Reset properties before loading protagonist-specific properties
+
+    // IMPORTANT: This function now ONLY loads data, it does NOT change the model or appearance.
+    // The protagonistModelHash argument is kept for consistency but is NOT used to set the model here.
+    // The game is expected to handle the protagonist's model and default appearance.
 
     // Load from consolidated protagonist save files
     Money_Load(PROTAGONIST_MONEY_FILE);
@@ -236,8 +251,9 @@ void LoadProtagonistData(Hash protagonistModelHash) {
     GunStore_Load(); // No path argument, uses its internal default
     Properties_Load(PROTAGONIST_PROPERTIES_FILE);
 
-    // Set g_isCustomCharacterActive to false, as we're loading protagonist data
-    g_isCustomCharacterActive = false;
+    // NEW: Update g_lastActiveCharacterIsCustom and save settings
+    g_lastActiveCharacterIsCustom = false;
+    SaveSettings();
 
     UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
     UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("Protagonist Save Loaded!"));
@@ -247,6 +263,9 @@ void LoadProtagonistData(Hash protagonistModelHash) {
 void SwitchToCharacter(Hash newModelHash) {
     // This function is still present but not called by the current save/load menu options.
     // It's kept for potential future to switch character models without loading data.
+    // NEW: Reset properties before switching character models
+    Properties_Reset();
+
     if (!RequestModel(newModelHash)) {
         UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
         UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~r~Failed to switch character model."));
@@ -292,6 +311,10 @@ void SwitchToCharacter(Hash newModelHash) {
     RpEvents_Load(g_isCustomCharacterActive ? xpFile : PROTAGONIST_XP_FILE);
     GunStore_Load(); // No path argument, uses its internal default
     Properties_Load(g_isCustomCharacterActive ? propertiesFile : PROTAGONIST_PROPERTIES_FILE);
+
+    // NEW: Update g_lastActiveCharacterIsCustom and save settings
+    g_lastActiveCharacterIsCustom = g_isCustomCharacterActive;
+    SaveSettings();
 }
 
 
@@ -449,7 +472,7 @@ void draw_saveload_menu() {
             case 2: // Load Protagonist (consolidated)
                 // When loading the protagonist save, we'll default to Franklin's model.
                 // The actual save data (money, rank, etc.) will be the shared protagonist data.
-                LoadProtagonistData(FRANKLIN_MODEL_HASH);
+                LoadProtagonistData(FRANKLIN_MODEL_HASH); // Default to Franklin for loading protagonist save
                 inputDelayFrames = 10;
                 break;
             case 3: // Back
@@ -467,19 +490,45 @@ void draw_saveload_menu() {
 // This function is called on ScriptMain to load initial character/data
 void LoadGameDataInitial() // Renamed from LoadGameData to avoid confusion
 {
-    // On initial load, we assume the custom character is the default.
-    // If g_autoLoadCharacter is true, it will load the custom character's data.
-    // If g_autoLoadCharacter is false, it will start with a default state (which will be a protagonist if not overridden).
-    CharacterCreator_Load(characterFile);
-    Money_Load(playerStatsFile);
-    RankBar_Load(playerStatsFile);
-    RpEvents_Load(xpFile);
-    GunStore_Load(); // No path argument, uses its internal default
-    Properties_Load(propertiesFile);
-    WAIT(100); // Small delay to ensure files are read
+    // NEW: Reset properties before initial load based on auto-load setting
+    Properties_Reset();
 
-    CharacterCreator_Apply();
-    g_isCustomCharacterActive = true; // Mark custom character as active after initial load
+    // Determine which character's data to load based on g_lastActiveCharacterIsCustom
+    if (g_lastActiveCharacterIsCustom) {
+        // Load custom character data
+        if (!RequestModel(GAMEPLAY::GET_HASH_KEY("mp_m_freemode_01"))) {
+            UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
+            UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~r~Failed to load custom character model for auto-load."));
+            UI::_DRAW_NOTIFICATION(false, true);
+            // Fallback to protagonist if custom model fails to load
+            // This fallback will now correctly only load data, not try to set model
+            LoadProtagonistData(FRANKLIN_MODEL_HASH); // Default to Franklin
+            return;
+        }
+        PLAYER::SET_PLAYER_MODEL(PLAYER::PLAYER_ID(), GAMEPLAY::GET_HASH_KEY("mp_m_freemode_01"));
+        g_activePlayerModel = GAMEPLAY::GET_HASH_KEY("mp_m_freemode_01");
+        g_isCustomCharacterActive = true;
+
+        CharacterCreator_Load(characterFile);
+        Money_Load(playerStatsFile);
+        RankBar_Load(playerStatsFile);
+        RpEvents_Load(xpFile);
+        GunStore_Load();
+        Properties_Load(propertiesFile);
+        CharacterCreator_Apply();
+        UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
+        UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~g~Auto-loaded Custom Character!"));
+        UI::_DRAW_NOTIFICATION(false, true);
+    }
+    else {
+        // Load protagonist data (default to Franklin if last active was protagonist)
+        // This will now correctly only load data, not try to set model
+        LoadProtagonistData(FRANKLIN_MODEL_HASH); // Assumes Franklin as the default protagonist for auto-load
+        UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
+        UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~g~Auto-loaded Protagonist Save!"));
+        UI::_DRAW_NOTIFICATION(false, true);
+    }
+    WAIT(100); // Small delay to ensure files are read
 }
 
 
@@ -517,7 +566,14 @@ void SkipIntroAndLoadCharacter()
         UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
         UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~y~Auto-load character is OFF. Using default character."));
         UI::_DRAW_NOTIFICATION(false, true);
+        // NEW: If not auto-loading, ensure properties are reset to default (unowned) state
+        Properties_Reset();
+        // Also ensure g_lastActiveCharacterIsCustom is set to false if not auto-loading and starting fresh
+        g_lastActiveCharacterIsCustom = false;
+        SaveSettings(); // Persist this state
     }
+    // After initial load or reset, set the active player model
+    g_activePlayerModel = ENTITY::GET_ENTITY_MODEL(PLAYER::PLAYER_PED_ID());
 }
 
 void ScriptMain() {
@@ -531,13 +587,13 @@ void ScriptMain() {
     GunStore_Init();
     Credits_Init();
     CarExport_Init();
-    Properties_Init();
+    Properties_Init(); // Initialize properties for the very first time (before any loads)
     Settings_Init(); // Initialize settings (color themes)
     LoadSettings();  // Load settings from file
     // ApplyColorTheme(); // Removed call to ApplyColorTheme()
 
     SkipIntroAndLoadCharacter();
-    g_activePlayerModel = ENTITY::GET_ENTITY_MODEL(PLAYER::PLAYER_PED_ID()); // Set initial active model
+    // g_activePlayerModel is now set within SkipIntroAndLoadCharacter
 
     extern void (*Vehicle_DrawMenu)(int& menuIndex, int& menuCategory);
     srand((unsigned int)GetTickCount64());

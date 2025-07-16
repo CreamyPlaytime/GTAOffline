@@ -76,5 +76,8 @@ void Properties_Save(const char* filename);
 void Properties_Load(const char* filename);
 void ShowNotification(const char* message); // Declared here for external use
 
+// NEW: Function to reset all properties to default state and remove blips
+void Properties_Reset();
+
 // Declare external inputDelayFrames from script.cpp
 extern int inputDelayFrames;

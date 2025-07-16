@@ -16,6 +16,9 @@ int g_keyboardMenuKey = VK_F4; // Default F4 (115)
 int g_controllerMenuButton1 = BTN_RB; // Default RB
 int g_controllerMenuButton2 = BTN_A;  // Default A
 
+// NEW: Default to custom character being the last active
+bool g_lastActiveCharacterIsCustom = true;
+
 // --- File Constant ---
 const char* settingsFile = "GTAOfflineSettings.ini";
 
@@ -43,7 +46,6 @@ std::string GetKeyName(int keyCode) {
     case VK_PAUSE: return "PAUSE";
     case VK_CAPITAL: return "CAPS LOCK";
     case VK_ESCAPE: return "ESC";
-    case VK_SPACE: return "SPACE";
     case VK_PRIOR: return "PAGE UP";
     case VK_NEXT: return "PAGE DOWN";
     case VK_END: return "END";
@@ -82,6 +84,7 @@ std::string GetKeyName(int keyCode) {
     case VK_OEM_5: return "\\|";
     case VK_OEM_6: return "]}";
     case VK_OEM_7: return "'\"";
+    case VK_SPACE: return "SPACE"; // Added VK_SPACE
     default: return "Unknown (" + std::to_string(keyCode) + ")";
     }
 }
@@ -133,6 +136,8 @@ void SaveSettings() {
         file << "ShowRankBar=" << (g_showRankBar ? "true" : "false") << std::endl;
         file << "[Gameplay]" << std::endl;
         file << "AutoLoadCharacter=" << (g_autoLoadCharacter ? "true" : "false") << std::endl;
+        // NEW: Save last active character type
+        file << "LastActiveCharacterIsCustom=" << (g_lastActiveCharacterIsCustom ? "true" : "false") << std::endl;
         file << "[Keybinds]" << std::endl;
         file << "KeyboardMenuKey=" << g_keyboardMenuKey << std::endl;
         file << "ControllerMenuButton1=" << g_controllerMenuButton1 << std::endl;
@@ -174,6 +179,8 @@ void LoadSettings() {
                     }
                     else if (currentSection == "Gameplay") {
                         if (key == "AutoLoadCharacter") g_autoLoadCharacter = stringToBool(value);
+                        // NEW: Load last active character type
+                        else if (key == "LastActiveCharacterIsCustom") g_lastActiveCharacterIsCustom = stringToBool(value);
                     }
                     else if (currentSection == "Keybinds") {
                         if (key == "KeyboardMenuKey") {

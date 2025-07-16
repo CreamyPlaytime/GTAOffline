@@ -14,6 +14,9 @@ extern int g_keyboardMenuKey;
 extern int g_controllerMenuButton1;
 extern int g_controllerMenuButton2;
 
+// NEW: Track if the last active character was custom (true) or protagonist (false)
+extern bool g_lastActiveCharacterIsCustom;
+
 // UI Color Themes - REMOVED: g_colorThemes and g_currentThemeIndex
 
 // --- Function Declarations ---

@@ -28,14 +28,14 @@
 std::vector<Property> g_properties;
 
 // Global variable to store the name of the last used house for spawning
-std::string g_lastUsedHouseName = ""; // CORRECTED: Definition of global variable
+std::string g_lastUsedHouseName = "";
 
 // Global state for tracking if player is inside a property that required teleport (e.g., a residence)
 bool g_isPlayerInsideProperty = false;
 // Global variable to store the interior ID of the property the player is currently teleported into
-int g_currentTeleportedInteriorID = 0; // CORRECTED: Definition of global variable
+int g_currentTeleportedInteriorID = 0;
 // Global pointer to the property object the player is currently inside (only for teleported residences)
-Property* g_activeTeleportedProperty = nullptr; // CORRECTED: Definition of global variable
+Property* g_activeTeleportedProperty = nullptr;
 
 
 // --- Internal Helper Functions ---
@@ -598,6 +598,27 @@ void Properties_Init() {
     g_currentTeleportedInteriorID = 0; // No interior active on init
     g_activeTeleportedProperty = nullptr; // No active property on init
 }
+
+// NEW: Function to reset all properties and their blips to default state
+void Properties_Reset() {
+    // Remove existing blips from the map
+    for (size_t i = 0; i < g_properties.size(); ++i) {
+        if (UI::DOES_BLIP_EXIST(g_properties[i].blipHandle)) {
+            UI::REMOVE_BLIP(&g_properties[i].blipHandle);
+        }
+    }
+    g_properties.clear(); // Clear all properties from the vector
+
+    // Reset global property state variables
+    g_isPlayerInsideProperty = false;
+    g_currentTeleportedInteriorID = 0;
+    g_activeTeleportedProperty = nullptr;
+    g_lastUsedHouseName = ""; // Reset last used house name
+
+    // Re-initialize properties to their default "for sale" state
+    Properties_Init();
+}
+
 
 void Properties_Tick() {
     Player player = PLAYER::PLAYER_ID();
