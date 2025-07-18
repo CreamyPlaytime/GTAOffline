@@ -192,11 +192,9 @@ void draw_car_shop_menu() {
         const int numOptions = g_vehicleCategories.size() + 1;
         float totalHeight = MENU_H * (numOptions + 1);
 
-        // Draw background and header
         GRAPHICS::DRAW_RECT(MENU_X + MENU_W * 0.5f, MENU_Y - MENU_H * 0.5f + totalHeight * 0.5f, MENU_W, totalHeight, BG_COLOR.r, BG_COLOR.g, BG_COLOR.b, BG_COLOR.a);
         DrawMenuHeader("Car Shop", MENU_X, MENU_Y, MENU_W);
 
-        // Draw options
         float optionY = MENU_Y + MENU_H;
         for (size_t i = 0; i < g_vehicleCategories.size(); ++i) {
             DrawMenuOption(g_vehicleCategories[i].name, MENU_X, optionY + MENU_H * i, MENU_W, MENU_H, i == carCategoryIndex);
@@ -204,17 +202,25 @@ void draw_car_shop_menu() {
         DrawMenuOption("Back", MENU_X, optionY + MENU_H * g_vehicleCategories.size(), MENU_W, MENU_H, g_vehicleCategories.size() == carCategoryIndex);
 
         // Navigation and activation logic
-        if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP)) carCategoryIndex = (carCategoryIndex - 1 + numOptions) % numOptions;
-        if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) carCategoryIndex = (carCategoryIndex + 1) % numOptions;
-        if (IsKeyJustUp(VK_NUMPAD5) || PadPressed(BTN_A)) {
-            if (carCategoryIndex == g_vehicleCategories.size()) {
+        if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP)) carCategoryIndex = (carCategoryIndex - 1 + numOptions) % numOptions;
+        if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) carCategoryIndex = (carCategoryIndex + 1) % numOptions;
+        if (IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || PadPressed(BTN_A)) {
+            if (carCategoryIndex == g_vehicleCategories.size()) { // "Back" option selected
                 menuCategory = 0; // CAT_MAIN
                 menuIndex = 4;
+                inputDelayFrames = 10; // Apply delay after action
             }
             else {
                 inVehicleSelection = true;
                 vehicleIndex = 0;
+                inputDelayFrames = 10; // Apply delay after action
             }
+        }
+        // Added Back/Escape for going back from category selection
+        if (IsKeyJustUp(VK_NUMPAD0) || IsKeyJustUp(VK_BACK) || IsKeyJustUp(VK_ESCAPE) || PadPressed(BTN_B)) {
+            menuCategory = 0; // CAT_MAIN
+            menuIndex = 4; // Index for Car Shop in main menu
+            inputDelayFrames = 10; // Apply delay after action
         }
     }
     else {
@@ -223,11 +229,9 @@ void draw_car_shop_menu() {
         const int numOptions = selectedCategory.vehicles.size() + 1;
         float totalHeight = MENU_H * (numOptions + 1);
 
-        // Draw background and header
         GRAPHICS::DRAW_RECT(MENU_X + MENU_W * 0.5f, MENU_Y - MENU_H * 0.5f + totalHeight * 0.5f, MENU_W, totalHeight, BG_COLOR.r, BG_COLOR.g, BG_COLOR.b, BG_COLOR.a);
         DrawMenuHeader(selectedCategory.name, MENU_X, MENU_Y, MENU_W);
 
-        // Draw options
         float optionY = MENU_Y + MENU_H;
         char vehicleLabel[100];
         for (size_t i = 0; i < selectedCategory.vehicles.size(); ++i) {
@@ -237,11 +241,12 @@ void draw_car_shop_menu() {
         DrawMenuOption("Back", MENU_X, optionY + MENU_H * selectedCategory.vehicles.size(), MENU_W, MENU_H, selectedCategory.vehicles.size() == vehicleIndex);
 
         // Navigation and activation logic
-        if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP)) vehicleIndex = (vehicleIndex - 1 + numOptions) % numOptions;
-        if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) vehicleIndex = (vehicleIndex + 1) % numOptions;
-        if (IsKeyJustUp(VK_NUMPAD5) || PadPressed(BTN_A)) {
-            if (vehicleIndex == selectedCategory.vehicles.size()) {
+        if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP)) vehicleIndex = (vehicleIndex - 1 + numOptions) % numOptions;
+        if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) vehicleIndex = (vehicleIndex + 1) % numOptions;
+        if (IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || PadPressed(BTN_A)) {
+            if (vehicleIndex == selectedCategory.vehicles.size()) { // "Back" option selected
                 inVehicleSelection = false;
+                inputDelayFrames = 10; // Apply delay after action
             }
             else {
                 VehicleForSale& car = selectedCategory.vehicles[vehicleIndex];
@@ -262,7 +267,13 @@ void draw_car_shop_menu() {
                     UI::_ADD_TEXT_COMPONENT_STRING("~r~Not enough money!");
                     UI::_DRAW_NOTIFICATION(false, true);
                 }
+                inputDelayFrames = 10; // Apply delay after action
             }
+        }
+        // Added Back/Escape for going back from vehicle selection
+        if (IsKeyJustUp(VK_NUMPAD0) || IsKeyJustUp(VK_BACK) || IsKeyJustUp(VK_ESCAPE) || PadPressed(BTN_B)) {
+            inVehicleSelection = false;
+            inputDelayFrames = 10; // Apply delay after action
         }
     }
 }

@@ -1,5 +1,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "Vehicle.h"
+#include "script.h" // For global inputDelayFrames, MENU_X, MENU_Y, etc.
+#include "input.h"  // For IsKeyJustUp, PadPressed, etc.
+#include <algorithm> // For std::max, std::min
 
 // === Persistent Vehicle Options ===
 bool godMode = false;
@@ -73,7 +76,8 @@ VehicleMenu g_vehicleMenu;
 void VehicleMenu_DrawMenu(int& menuIndex, int& menuCategory) { g_vehicleMenu.DrawMenu(menuIndex, menuCategory); }
 void (*Vehicle_DrawMenu)(int&, int&) = VehicleMenu_DrawMenu;
 
-// === MENU LABELS & CONSTANTS ===
+// Removed duplicate enum VehicleOption definition from here, it should only be in Vehicle.h
+
 static const char* VEHOPT_LABELS[VEHOPT_COUNT] = {
     "God Mode", "Drive Dead Cars", "Vehicle Fly", "Auto Repair", "Auto Repair (Nearby)",
     "Impact Force", "Traction", "Engine Power", "Engine Torque", "Gravity", "Traffic Density",
@@ -89,7 +93,9 @@ static const float TRACT_MIN = 0.1f, TRACT_MAX = 30.0f;
 static const float DENSITY_MIN = 0.0f, DENSITY_MAX = 5.0f;
 
 // === Helper: Pick Nearest Vehicle ===
-void TryControlNearestVehicle() {
+// Modified to find nearest vehicle, but without excluding player's current vehicle
+// Renamed to find_target_vehicle for clarity
+Vehicle FindTargetVehicle() {
     Vector3 playerPos = ENTITY::GET_ENTITY_COORDS(PLAYER::PLAYER_PED_ID(), true);
     const int MAX_VEHICLES = 128;
     Vehicle vehicles[MAX_VEHICLES];
@@ -97,56 +103,28 @@ void TryControlNearestVehicle() {
 
     float minDist = 999999.0f;
     Vehicle nearest = 0;
+    // Iterate through all vehicles in the world, including the player's own, if applicable
     for (int i = 0; i < count; i++) {
         if (!ENTITY::DOES_ENTITY_EXIST(vehicles[i]))
             continue;
         Vector3 vPos = ENTITY::GET_ENTITY_COORDS(vehicles[i], true);
         float dist = sqrtf(powf(playerPos.x - vPos.x, 2) + powf(playerPos.y - vPos.y, 2) + powf(playerPos.z - vPos.z, 2));
-        if (dist < minDist && vehicles[i] != PED::GET_VEHICLE_PED_IS_IN(PLAYER::PLAYER_PED_ID(), false)) {
+        // Find the overall nearest vehicle, without excluding player's own
+        if (dist < minDist) {
             minDist = dist;
             nearest = vehicles[i];
         }
     }
-    if (nearest) {
-        remoteControlledVehicle = nearest;
-        remoteCurrentSpeed = 0.0f;
-        remoteControlActive = true;
-    }
+    return nearest;
 }
 
 
 // --- UI DRAWING HELPERS ---
-static void DrawSliderOption(float x, float y, float w, float h, const char* label, float value, bool selected) {
-    char buf[64];
-    _snprintf_s(buf, sizeof(buf), _TRUNCATE, "%s: < %.2f >", label, value);
-    GRAPHICS::DRAW_RECT(x + w * 0.5f, y + h * 0.5f, w, h, selected ? 150 : 30, selected ? 180 : 40, selected ? 230 : 60, selected ? 255 : 130);
-    UI::SET_TEXT_FONT(0);
-    UI::SET_TEXT_SCALE(0.0f, 0.35f);
-    UI::SET_TEXT_COLOUR(0, 0, 0, 255);
-    UI::_SET_TEXT_ENTRY("STRING");
-    UI::_ADD_TEXT_COMPONENT_STRING(buf);
-    UI::_DRAW_TEXT(x + 0.017f, y + 0.007f);
-}
-static void DrawToggleOption(float x, float y, float w, float h, const char* label, bool value, bool selected) {
-    char buf[64];
-    _snprintf_s(buf, sizeof(buf), _TRUNCATE, "%s [%s]", label, value ? "ON" : "OFF");
-    GRAPHICS::DRAW_RECT(x + w * 0.5f, y + h * 0.5f, w, h, selected ? 150 : 30, selected ? 180 : 40, selected ? 230 : 60, selected ? 255 : 130);
-    UI::SET_TEXT_FONT(0);
-    UI::SET_TEXT_SCALE(0.0f, 0.35f);
-    UI::SET_TEXT_COLOUR(0, 0, 0, 255);
-    UI::_SET_TEXT_ENTRY("STRING");
-    UI::_ADD_TEXT_COMPONENT_STRING(buf);
-    UI::_DRAW_TEXT(x + 0.017f, y + 0.007f);
-}
-static void DrawActionOption(float x, float y, float w, float h, const char* label, bool selected) {
-    GRAPHICS::DRAW_RECT(x + w * 0.5f, y + h * 0.5f, w, h, selected ? 150 : 30, selected ? 180 : 40, selected ? 230 : 60, selected ? 255 : 130);
-    UI::SET_TEXT_FONT(0);
-    UI::SET_TEXT_SCALE(0.0f, 0.35f);
-    UI::SET_TEXT_COLOUR(0, 0, 0, 255);
-    UI::_SET_TEXT_ENTRY("STRING");
-    UI::_ADD_TEXT_COMPONENT_STRING((char*)label);
-    UI::_DRAW_TEXT(x + 0.017f, y + 0.007f);
-}
+// These helpers are already defined in script.cpp, just need to be declared extern if used here.
+// However, since they are static in script.cpp, they are not directly accessible.
+// They are typically in a shared UI.h or similar. For now, we'll assume they are available
+// or that the compiler links them from script.obj.
+// For the purpose of this file, we'll use the DrawPairedMenuOption and DrawMenuOption directly.
 
 // === MENU CLASS ===
 VehicleMenu::VehicleMenu() {}
@@ -158,7 +136,7 @@ Vehicle VehicleMenu::GetPlayerVehicle() {
 void VehicleMenu::Tick()
 {
     ApplyMods();
-    HandleEnterDeadCar();
+    HandleEnterDeadCar(); // This will now handle the "drive dead cars" logic
     HandleImpactForceIfActive();
 
     if (vehicleFly && PED::IS_PED_IN_ANY_VEHICLE(PLAYER::PLAYER_PED_ID(), false)) {
@@ -171,9 +149,45 @@ void VehicleMenu::Tick()
         flyingVehicle = 0;
         flyCurrentSpeed = 0.0f;
     }
+
+    // --- Remote Control Camera / Vehicle Management ---
     if (remoteControlEnabled) {
-        HandleRemoteControlFly();
+        // If remoteControlledVehicle is invalid or not set, try to find a new one
+        if (!remoteControlledVehicle || !ENTITY::DOES_ENTITY_EXIST(remoteControlledVehicle)) {
+            remoteControlledVehicle = FindTargetVehicle(); // Find the nearest vehicle
+            if (remoteControlledVehicle) { // If a new vehicle was found, start its camera
+                StartRemoteCam(remoteControlledVehicle);
+                remoteControlActive = true; // Activate only if a vehicle is successfully targeted
+            }
+            else {
+                // If no vehicle could be found nearby, temporarily deactivate remote control
+                // to prevent constant attempts and ensure player control is restored
+                remoteControlActive = false;
+                PLAYER::SET_PLAYER_CONTROL(PLAYER::PLAYER_ID(), true, 0);
+                StopRemoteCam();
+            }
+        }
+
+        // Only run remote control logic if a vehicle is actively controlled
+        if (remoteControlActive && ENTITY::DOES_ENTITY_EXIST(remoteControlledVehicle)) {
+            HandleRemoteControlFly();
+        }
     }
+    else { // remoteControlEnabled is false
+        // Ensure remote control is fully turned off and player control is restored
+        if (remoteControlActive) { // If it was active, deactivate it gracefully
+            PLAYER::SET_PLAYER_CONTROL(PLAYER::PLAYER_ID(), true, 0);
+            if (remoteControlledVehicle && ENTITY::DOES_ENTITY_EXIST(remoteControlledVehicle)) {
+                VEHICLE::SET_VEHICLE_GRAVITY(remoteControlledVehicle, true);
+                ENTITY::SET_ENTITY_VELOCITY(remoteControlledVehicle, 0, 0, 0);
+            }
+            StopRemoteCam();
+            remoteControlledVehicle = 0;
+            remoteControlActive = false;
+            remoteCurrentSpeed = 0.0f;
+        }
+    }
+
     if (remoteControlAllEnabled) {
         HandleRemoteControlFlyAll();
     }
@@ -181,7 +195,17 @@ void VehicleMenu::Tick()
 
 void VehicleMenu::DrawMenu(int& menuIndex, int& menuCategory)
 {
-    const float x = 0.02f, y = 0.13f, w = 0.29f, h = 0.038f;
+    extern const float MENU_X, MENU_Y, MENU_W, MENU_H; // From script.h
+    extern int inputDelayFrames; // From script.h
+    extern const RGBA BG_COLOR, HEADER_COLOR, OPTION_COLOR, SELECTED_COLOR, TEXT_COLOR, SELECTED_TEXT_COLOR, HEADER_TEXT_COLOR; // From script.h
+    extern const int FONT; // From script.h
+    extern void DrawMenuHeader(const char* text, float x, float y, float w); // From script.h
+    extern void DrawMenuOption(const char* text, float x, float y, float w, float h, bool selected); // From script.h
+    extern void DrawPairedMenuOption(const char* label, const char* value, float x, float y, float w, float h, bool selected); // From script.h
+    extern void ClampMenuIndex(int& idx, int max); // From script.h
+
+
+    const float x = MENU_X, y = MENU_Y, w = MENU_W, h = MENU_H;
     int numOptions = VEHOPT_COUNT;
 
     // Draw Background & Header
@@ -209,126 +233,129 @@ void VehicleMenu::DrawMenu(int& menuIndex, int& menuCategory)
         const char* label = VEHOPT_LABELS[i];
 
         switch (i) {
-        case VEHOPT_GODMODE: case VEHOPT_DRIVEDEAD: case VEHOPT_FLY: case VEHOPT_AUTOREPAIR:
-        case VEHOPT_AUTOREPAIR_NEARBY: case VEHOPT_REMOTECONTROL: case VEHOPT_REMOTECONTROL_ALL: {
+        case VEHOPT_GODMODE:
+        case VEHOPT_DRIVEDEAD:
+        case VEHOPT_FLY:
+        case VEHOPT_AUTOREPAIR:
+        case VEHOPT_AUTOREPAIR_NEARBY:
+        case VEHOPT_REMOTECONTROL:
+        case VEHOPT_REMOTECONTROL_ALL: {
             bool* pBool = nullptr;
-            if (i == VEHOPT_GODMODE) pBool = &godMode; else if (i == VEHOPT_DRIVEDEAD) pBool = &driveDeadCars;
-            else if (i == VEHOPT_FLY) pBool = &vehicleFly; else if (i == VEHOPT_AUTOREPAIR) pBool = &autoRepair;
-            else if (i == VEHOPT_AUTOREPAIR_NEARBY) pBool = &autoRepairNearby; else if (i == VEHOPT_REMOTECONTROL) pBool = &remoteControlEnabled;
+            if (i == VEHOPT_GODMODE) pBool = &godMode;
+            else if (i == VEHOPT_DRIVEDEAD) pBool = &driveDeadCars;
+            else if (i == VEHOPT_FLY) pBool = &vehicleFly;
+            else if (i == VEHOPT_AUTOREPAIR) pBool = &autoRepair;
+            else if (i == VEHOPT_AUTOREPAIR_NEARBY) pBool = &autoRepairNearby;
+            else if (i == VEHOPT_REMOTECONTROL) pBool = &remoteControlEnabled;
             else if (i == VEHOPT_REMOTECONTROL_ALL) pBool = &remoteControlAllEnabled;
             sprintf_s(valueBuffer, "%s", *pBool ? "[ON]" : "[OFF]");
             DrawPairedMenuOption(label, valueBuffer, x, currentY, w, h, isSelected);
             break;
         }
-        case VEHOPT_IMPACT_FORCE: case VEHOPT_TRACTION: case VEHOPT_ENGINE_POWER:
-        case VEHOPT_TORQUE: case VEHOPT_GRAVITY: case VEHOPT_DENSITY: {
+        case VEHOPT_IMPACT_FORCE:
+        case VEHOPT_TRACTION:
+        case VEHOPT_ENGINE_POWER:
+        case VEHOPT_TORQUE:
+        case VEHOPT_GRAVITY:
+        case VEHOPT_DENSITY: {
             float* pFloat = nullptr;
-            if (i == VEHOPT_IMPACT_FORCE) pFloat = &impactForce; else if (i == VEHOPT_TRACTION) pFloat = &customTraction;
-            else if (i == VEHOPT_ENGINE_POWER) pFloat = &customSpeed; else if (i == VEHOPT_TORQUE) pFloat = &customTorque;
-            else if (i == VEHOPT_GRAVITY) pFloat = &customGravity; else if (i == VEHOPT_DENSITY) pFloat = &vehicleDensity;
+            if (i == VEHOPT_IMPACT_FORCE) pFloat = &impactForce;
+            else if (i == VEHOPT_TRACTION) pFloat = &customTraction;
+            else if (i == VEHOPT_ENGINE_POWER) pFloat = &customSpeed;
+            else if (i == VEHOPT_TORQUE) pFloat = &customTorque;
+            else if (i == VEHOPT_GRAVITY) pFloat = &customGravity;
+            else if (i == VEHOPT_DENSITY) pFloat = &vehicleDensity;
             sprintf_s(valueBuffer, "< %.2f >", *pFloat);
             DrawPairedMenuOption(label, valueBuffer, x, currentY, w, h, isSelected);
             break;
         }
-        case VEHOPT_REPAIR: case VEHOPT_BACK:
+        case VEHOPT_REPAIR:
+        case VEHOPT_BACK:
             DrawMenuOption(label, x, currentY, w, h, isSelected);
             break;
         }
     }
 
     // --- Navigation & Activation Logic ---
-    static int navDelay = 0;
-    if (navDelay > 0) navDelay--;
-    bool up = IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP);
-    bool down = IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN);
-    if ((IsKeyDown(VK_NUMPAD8) || PadHeld(DPAD_UP)) && navDelay == 0) { up = true; navDelay = 8; }
-    if ((IsKeyDown(VK_NUMPAD2) || PadHeld(DPAD_DOWN)) && navDelay == 0) { down = true; navDelay = 8; }
-    if (up)    menuIndex = (menuIndex - 1 + numOptions) % numOptions;
-    if (down)  menuIndex = (menuIndex + 1) % numOptions;
+    // Only process input if no global input delay
+    if (inputDelayFrames == 0) {
+        // Corrected: Use IsKeyJustUp for single press navigation (for both numpad and arrows)
+        bool up_pressed = IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP);
+        bool down_pressed = IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN);
 
-    static int lrDelay = 0;
-    if (lrDelay > 0) lrDelay--;
-    bool left = IsKeyJustUp(VK_NUMPAD4) || PadPressed(DPAD_LEFT);
-    bool right = IsKeyJustUp(VK_NUMPAD6) || PadPressed(DPAD_RIGHT);
-    if ((IsKeyDown(VK_NUMPAD4) || PadHeld(DPAD_LEFT)) && lrDelay == 0) { left = true; lrDelay = 4; }
-    if ((IsKeyDown(VK_NUMPAD6) || PadHeld(DPAD_RIGHT)) && lrDelay == 0) { right = true; lrDelay = 4; }
-
-    float spdStep = 0.1f, torqueStep = 0.1f, gravStep = 0.05f, forceStep = 0.5f, tractStep = 0.1f, densityStep = 0.1f;
-    if (left) {
-        switch (menuIndex) {
-        case VEHOPT_IMPACT_FORCE:   impactForce = std::max(FORCE_MIN, impactForce - forceStep); break;
-        case VEHOPT_ENGINE_POWER:   customSpeed = std::max(SPEED_MIN, customSpeed - spdStep); break;
-        case VEHOPT_TORQUE:         customTorque = std::max(TORQUE_MIN, customTorque - torqueStep); break;
-        case VEHOPT_GRAVITY:        customGravity = std::max(GRAV_MIN, customGravity - gravStep); break;
-        case VEHOPT_TRACTION:       customTraction = std::max(TRACT_MIN, customTraction - tractStep); break;
-        case VEHOPT_DENSITY:        vehicleDensity = std::max(DENSITY_MIN, vehicleDensity - densityStep); break;
+        if (up_pressed) {
+            menuIndex = (menuIndex - 1 + numOptions) % numOptions;
+            inputDelayFrames = 10; // Apply delay after navigation
         }
-    }
-    if (right) {
-        switch (menuIndex) {
-        case VEHOPT_IMPACT_FORCE:   impactForce = std::min(FORCE_MAX, impactForce + forceStep); break;
-        case VEHOPT_ENGINE_POWER:   customSpeed = std::min(SPEED_MAX, customSpeed + spdStep); break;
-        case VEHOPT_TORQUE:         customTorque = std::min(TORQUE_MAX, customTorque + torqueStep); break;
-        case VEHOPT_GRAVITY:        customGravity = std::min(GRAV_MAX, customGravity + gravStep); break;
-        case VEHOPT_TRACTION:       customTraction = std::min(TRACT_MAX, customTraction + tractStep); break;
-        case VEHOPT_DENSITY:        vehicleDensity = std::min(DENSITY_MAX, vehicleDensity + densityStep); break;
+        if (down_pressed) {
+            menuIndex = (menuIndex + 1) % numOptions;
+            inputDelayFrames = 10; // Apply delay after navigation
         }
-    }
 
-    static bool prevA = false;
-    bool currA = PadPressed(BTN_A);
-    if (IsKeyJustUp(VK_NUMPAD5) || (currA && !prevA)) {
-        switch (menuIndex) {
-        case VEHOPT_GODMODE:           godMode = !godMode; break;
-        case VEHOPT_DRIVEDEAD:         driveDeadCars = !driveDeadCars; break;
-        case VEHOPT_FLY:
-            vehicleFly = !vehicleFly;
-            if (!vehicleFly) {
-                Vehicle currentVeh = GetPlayerVehicle();
-                if (currentVeh != 0 && ENTITY::DOES_ENTITY_EXIST(currentVeh)) {
-                    VEHICLE::SET_VEHICLE_GRAVITY(currentVeh, true);
-                }
+        // Corrected: Use IsKeyJustUp for single press slider adjustments (for both numpad and arrows)
+        int direction = 0;
+        if (IsKeyJustUp(VK_NUMPAD4) || IsKeyJustUp(VK_LEFT) || PadPressed(DPAD_LEFT))  direction = -1;
+        if (IsKeyJustUp(VK_NUMPAD6) || IsKeyJustUp(VK_RIGHT) || PadPressed(DPAD_RIGHT)) direction = 1;
+
+        if (direction != 0) { // Only adjust if a direction is pressed
+            switch (menuIndex) {
+            case VEHOPT_IMPACT_FORCE:   impactForce = std::max(FORCE_MIN, std::min(impactForce + direction * 1.0f, FORCE_MAX)); inputDelayFrames = 5; break;
+            case VEHOPT_ENGINE_POWER:   customSpeed = std::max(SPEED_MIN, std::min(customSpeed + direction * 1.0f, SPEED_MAX)); inputDelayFrames = 5; break;
+            case VEHOPT_TORQUE:         customTorque = std::max(TORQUE_MIN, std::min(customTorque + direction * 1.0f, TORQUE_MAX)); inputDelayFrames = 5; break;
+            case VEHOPT_GRAVITY:        customGravity = std::max(GRAV_MIN, std::min(customGravity + direction * 0.1f, GRAV_MAX)); inputDelayFrames = 5; break;
+            case VEHOPT_TRACTION:       customTraction = std::max(TRACT_MIN, std::min(customTraction + direction * 0.1f, TRACT_MAX)); inputDelayFrames = 5; break;
+            case VEHOPT_DENSITY:        vehicleDensity = std::max(DENSITY_MIN, std::min(vehicleDensity + direction * 0.1f, DENSITY_MAX)); inputDelayFrames = 5; break;
             }
-            break;
-        case VEHOPT_AUTOREPAIR:        autoRepair = !autoRepair; break;
-        case VEHOPT_AUTOREPAIR_NEARBY: autoRepairNearby = !autoRepairNearby; break;
-        case VEHOPT_REMOTECONTROL:
-            remoteControlEnabled = !remoteControlEnabled;
-            if (remoteControlEnabled) {
-                PLAYER::SET_PLAYER_CONTROL(PLAYER::PLAYER_ID(), false, 0);
-                TryControlNearestVehicle();
-                if (remoteControlledVehicle) StartRemoteCam(remoteControlledVehicle);
-            }
-            else {
-                PLAYER::SET_PLAYER_CONTROL(PLAYER::PLAYER_ID(), true, 0);
-                if (remoteControlledVehicle && ENTITY::DOES_ENTITY_EXIST(remoteControlledVehicle)) {
-                    VEHICLE::SET_VEHICLE_GRAVITY(remoteControlledVehicle, true);
-                    ENTITY::SET_ENTITY_VELOCITY(remoteControlledVehicle, 0, 0, 0);
-                }
-                StopRemoteCam();
-                remoteControlledVehicle = 0;
-                remoteControlActive = false;
-                remoteCurrentSpeed = 0.0f;
-            }
-            break;
-        case VEHOPT_REMOTECONTROL_ALL:
-            remoteControlAllEnabled = !remoteControlAllEnabled;
-            if (!remoteControlAllEnabled) {
-                const int MAX_VEHICLES = 128;
-                Vehicle vehicles[MAX_VEHICLES];
-                int count = worldGetAllVehicles(vehicles, MAX_VEHICLES);
-                for (int i = 0; i < count; ++i) {
-                    if (ENTITY::DOES_ENTITY_EXIST(vehicles[i])) {
-                        VEHICLE::SET_VEHICLE_GRAVITY(vehicles[i], true);
+        }
+
+        static bool prevA = false;
+        bool currA = PadPressed(BTN_A);
+        // Corrected: Added IsKeyJustUp(VK_RETURN) for selection
+        if (IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || (currA && !prevA)) {
+            switch (menuIndex) {
+            case VEHOPT_GODMODE:           godMode = !godMode; inputDelayFrames = 10; break;
+            case VEHOPT_DRIVEDEAD:         driveDeadCars = !driveDeadCars; inputDelayFrames = 10; break;
+            case VEHOPT_FLY:
+                vehicleFly = !vehicleFly;
+                if (!vehicleFly) {
+                    Vehicle currentVeh = GetPlayerVehicle();
+                    if (currentVeh != 0 && ENTITY::DOES_ENTITY_EXIST(currentVeh)) {
+                        VEHICLE::SET_VEHICLE_GRAVITY(currentVeh, true);
                     }
                 }
+                inputDelayFrames = 10; break;
+            case VEHOPT_AUTOREPAIR:        autoRepair = !autoRepair; inputDelayFrames = 10; break;
+            case VEHOPT_AUTOREPAIR_NEARBY: autoRepairNearby = !autoRepairNearby; inputDelayFrames = 10; break;
+            case VEHOPT_REMOTECONTROL:
+                remoteControlEnabled = !remoteControlEnabled;
+                if (remoteControlEnabled) {
+                    PLAYER::SET_PLAYER_CONTROL(PLAYER::PLAYER_ID(), false, 0);
+                    // The next two lines are handled in VehicleMenu::Tick now for continuous re-attachment
+                    // TryControlNearestVehicle();
+                    // if (remoteControlledVehicle) StartRemoteCam(remoteControlledVehicle);
+                }
+                // The else block for turning off remote control is now handled in VehicleMenu::Tick
+                // to centralize cleanup logic.
+                inputDelayFrames = 10; break;
+            case VEHOPT_REMOTECONTROL_ALL:
+                remoteControlAllEnabled = !remoteControlAllEnabled;
+                if (!remoteControlAllEnabled) {
+                    const int MAX_VEHICLES = 128;
+                    Vehicle vehicles[MAX_VEHICLES];
+                    int count = worldGetAllVehicles(vehicles, MAX_VEHICLES);
+                    for (int i = 0; i < count; ++i) {
+                        if (ENTITY::DOES_ENTITY_EXIST(vehicles[i])) {
+                            VEHICLE::SET_VEHICLE_GRAVITY(vehicles[i], true);
+                        }
+                    }
+                }
+                inputDelayFrames = 10; break;
+            case VEHOPT_REPAIR:            Repair(); inputDelayFrames = 10; break;
+            case VEHOPT_BACK:              menuCategory = 0; menuIndex = 3; inputDelayFrames = 10; break;
             }
-            break;
-        case VEHOPT_REPAIR:            Repair(); break;
-        case VEHOPT_BACK:              menuCategory = 0; menuIndex = 3; break;
         }
+        prevA = currA;
     }
-    prevA = currA;
 }
 // ==========================
 //       MODS & ACTIONS
@@ -433,7 +460,6 @@ void VehicleMenu::HandleImpactForceIfActive()
         }
     }
 }
-
 void VehicleMenu::HandleEnterDeadCar() {
     if (!driveDeadCars) return;
     Ped playerPed = PLAYER::PLAYER_PED_ID();
@@ -466,10 +492,10 @@ void HandleRemoteControlFly()
     float leftX = GetPadAxis(LEFT_X);
     float leftY = GetPadAxis(LEFT_Y);
     float pitch = -leftY, yaw = -leftX, roll = 0.0f;
-    if (IsKeyDown(VK_NUMPAD8) || PadHeld(DPAD_UP))   pitch = 1.0f;
-    if (IsKeyDown(VK_NUMPAD5) || PadHeld(DPAD_DOWN)) pitch = -1.0f;
-    if (IsKeyDown(VK_NUMPAD4) || PadHeld(DPAD_LEFT))  yaw = -1.0f;
-    if (IsKeyDown(VK_NUMPAD6) || PadHeld(DPAD_RIGHT)) yaw = 1.0f;
+    if (IsKeyDown(VK_NUMPAD8) || IsKeyDown(VK_UP) || PadHeld(DPAD_UP))   pitch = 1.0f;
+    if (IsKeyDown(VK_NUMPAD5) || IsKeyDown(VK_DOWN) || PadHeld(DPAD_DOWN)) pitch = -1.0f;
+    if (IsKeyDown(VK_NUMPAD4) || IsKeyDown(VK_LEFT) || PadHeld(DPAD_LEFT))  yaw = -1.0f;
+    if (IsKeyDown(VK_NUMPAD6) || IsKeyDown(VK_RIGHT) || PadHeld(DPAD_RIGHT)) yaw = 1.0f;
     if (IsKeyDown(VK_NUMPAD9) || PadHeld(BTN_RB))      roll = 1.0f;
     if (IsKeyDown(VK_NUMPAD7) || PadHeld(BTN_LB))      roll = -1.0f;
 
@@ -504,7 +530,7 @@ void HandleRemoteControlFly()
     VEHICLE::SET_VEHICLE_GRAVITY(remoteControlledVehicle, false);
     ENTITY::SET_ENTITY_VELOCITY(remoteControlledVehicle, vel.x, vel.y, vel.z);
 
-    if (IsKeyJustUp(VK_BACK)) {
+    if (IsKeyJustUp(VK_BACK) || IsKeyJustUp(VK_ESCAPE)) {
         PLAYER::SET_PLAYER_CONTROL(PLAYER::PLAYER_ID(), true, 0);
         VEHICLE::SET_VEHICLE_GRAVITY(remoteControlledVehicle, true);
         ENTITY::SET_ENTITY_VELOCITY(remoteControlledVehicle, 0, 0, 0);
@@ -530,10 +556,10 @@ void HandleRemoteControlFlyAll()
         float leftX = GetPadAxis(LEFT_X);
         float leftY = GetPadAxis(LEFT_Y);
         float pitch = -leftY, yaw = -leftX, roll = 0.0f;
-        if (IsKeyDown(VK_NUMPAD8) || PadHeld(DPAD_UP))   pitch = 1.0f;
-        if (IsKeyDown(VK_NUMPAD5) || PadHeld(DPAD_DOWN)) pitch = -1.0f;
-        if (IsKeyDown(VK_NUMPAD4) || PadHeld(DPAD_LEFT))  yaw = -1.0f;
-        if (IsKeyDown(VK_NUMPAD6) || PadHeld(DPAD_RIGHT)) yaw = 1.0f;
+        if (IsKeyDown(VK_NUMPAD8) || IsKeyDown(VK_UP) || PadHeld(DPAD_UP))   pitch = 1.0f;
+        if (IsKeyDown(VK_NUMPAD5) || IsKeyDown(VK_DOWN) || PadHeld(DPAD_DOWN)) pitch = -1.0f;
+        if (IsKeyDown(VK_NUMPAD4) || IsKeyDown(VK_LEFT) || PadHeld(DPAD_LEFT))  yaw = -1.0f;
+        if (IsKeyDown(VK_NUMPAD6) || IsKeyDown(VK_RIGHT) || PadHeld(DPAD_RIGHT)) yaw = 1.0f;
         if (IsKeyDown(VK_NUMPAD9) || PadHeld(BTN_RB))      roll = 1.0f;
         if (IsKeyDown(VK_NUMPAD7) || PadHeld(BTN_LB))      roll = -1.0f;
 
@@ -597,10 +623,10 @@ void VehicleMenu::HandleFlyIfActive()
     float leftX = GetPadAxis(LEFT_X);
     float leftY = GetPadAxis(LEFT_Y);
     float pitch = -leftY, yaw = -leftX, roll = 0.0f;
-    if (IsKeyDown(VK_NUMPAD8) || PadHeld(DPAD_UP))   pitch = 1.0f;
-    if (IsKeyDown(VK_NUMPAD5) || PadHeld(DPAD_DOWN)) pitch = -1.0f;
-    if (IsKeyDown(VK_NUMPAD4) || PadHeld(DPAD_LEFT))  yaw = -1.0f;
-    if (IsKeyDown(VK_NUMPAD6) || PadHeld(DPAD_RIGHT)) yaw = 1.0f;
+    if (IsKeyDown(VK_NUMPAD8) || IsKeyDown(VK_UP) || PadHeld(DPAD_UP))   pitch = 1.0f;
+    if (IsKeyDown(VK_NUMPAD5) || IsKeyDown(VK_DOWN) || PadHeld(DPAD_DOWN)) pitch = -1.0f;
+    if (IsKeyDown(VK_NUMPAD4) || IsKeyDown(VK_LEFT) || PadHeld(DPAD_LEFT))  yaw = -1.0f;
+    if (IsKeyDown(VK_NUMPAD6) || IsKeyDown(VK_RIGHT) || PadHeld(DPAD_RIGHT)) yaw = 1.0f;
     if (IsKeyDown(VK_NUMPAD9) || PadHeld(BTN_RB))      roll = 1.0f;
     if (IsKeyDown(VK_NUMPAD7) || PadHeld(BTN_LB))      roll = -1.0f;
 

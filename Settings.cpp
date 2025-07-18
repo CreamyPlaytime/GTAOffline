@@ -6,8 +6,8 @@
 #include <vector>   // For std::vector
 #include <map>      // For mapping virtual key codes to strings
 
-// --- Global Settings Variables Definitions ---
-bool g_autoLoadCharacter = false; // Changed default to false
+// --- Global Settings Variables Definitions (DEFINED ONCE HERE) ---
+bool g_autoLoadCharacter = false;
 bool g_showMoneyDisplay = true;
 bool g_showRankBar = true;
 
@@ -387,11 +387,11 @@ void draw_settings_menu() {
         }
 
         // Handle menu up/down navigation
-        if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP)) {
+        if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP)) { //
             settingsMenuIndex = (settingsMenuIndex - 1 + (numOptions + 1)) % (numOptions + 1);
             inputDelayFrames = 10;
         }
-        else if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) {
+        else if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) { //
             settingsMenuIndex = (settingsMenuIndex + 1) % (numOptions + 1);
             inputDelayFrames = 10;
         }

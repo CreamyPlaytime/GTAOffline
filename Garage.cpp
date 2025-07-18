@@ -154,19 +154,29 @@ void draw_garage_menu() {
     bool backSelected = (g_ownedVehicles.size() == garageMenuIndex);
     DrawMenuOption("Back", MENU_X, optionY + MENU_H * g_ownedVehicles.size(), MENU_W, MENU_H, backSelected);
 
-    // --- Navigation and Activation Logic (Unchanged) ---
-    if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP)) garageMenuIndex = (garageMenuIndex - 1 + numOptions) % numOptions;
-    if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) garageMenuIndex = (garageMenuIndex + 1) % numOptions;
+    // --- Navigation and Activation Logic ---
+    // Added arrow key support
+    if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP)) garageMenuIndex = (garageMenuIndex - 1 + numOptions) % numOptions;
+    if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) garageMenuIndex = (garageMenuIndex + 1) % numOptions;
 
-    if (IsKeyJustUp(VK_NUMPAD5) || PadPressed(BTN_A)) {
+    // Added Enter key support AND Back/Escape for going back
+    if (IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || PadPressed(BTN_A)) {
         if (garageMenuIndex == g_ownedVehicles.size()) {
             // "Back" button was selected
             menuCategory = 0; // Go back to the main menu
             menuIndex = 5;    // Highlight the "Garage" option
+            inputDelayFrames = 10; // Apply delay after action
         }
         else {
             // A vehicle was selected, spawn it.
             spawn_vehicle(g_ownedVehicles[garageMenuIndex].hash);
+            inputDelayFrames = 10; // Apply delay after action
         }
+    }
+    // Allow Back/Escape to go back from the garage menu
+    if (IsKeyJustUp(VK_NUMPAD0) || IsKeyJustUp(VK_BACK) || IsKeyJustUp(VK_ESCAPE) || PadPressed(BTN_B)) {
+        menuCategory = 0; // CAT_MAIN
+        menuIndex = 5; // Index for Garage in main menu
+        inputDelayFrames = 10; // Apply delay after action
     }
 }

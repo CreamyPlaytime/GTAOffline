@@ -72,6 +72,7 @@ static void GetCameraVectors(Vector3* fwd, Vector3* rgt, Vector3* up) {
     float rotX = rot.x * (float)M_PI / 180.0f;
     float cosX = cos(rotX);
 
+    // Corrected: Use -> operator for pointer access
     fwd->x = -sin(rotZ) * cosX;
     fwd->y = cos(rotZ) * cosX;
     fwd->z = sin(rotX);
@@ -515,12 +516,12 @@ void Misc_DrawMenu(int& menuIndex, float x, float y, float w, float h) {
 
     // --- Navigation and Activation Logic ---
     ClampMenuIndex(menuIndex, miscNum);
-    if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP)) menuIndex = (menuIndex - 1 + miscNum) % miscNum;
-    if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) menuIndex = (menuIndex + 1) % miscNum;
+    if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP)) menuIndex = (menuIndex - 1 + miscNum) % miscNum;
+    if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) menuIndex = (menuIndex + 1) % miscNum;
 
     int dir = 0;
-    if (IsKeyJustUp(VK_NUMPAD4) || PadPressed(DPAD_LEFT))  dir = -1;
-    if (IsKeyJustUp(VK_NUMPAD6) || PadPressed(DPAD_RIGHT)) dir = 1;
+    if (IsKeyJustUp(VK_NUMPAD4) || IsKeyJustUp(VK_LEFT) || PadPressed(DPAD_LEFT))  dir = -1;
+    if (IsKeyJustUp(VK_NUMPAD6) || IsKeyJustUp(VK_RIGHT) || PadPressed(DPAD_RIGHT)) dir = 1;
 
     if (dir != 0) {
         if (menuIndex == 5) {
@@ -534,7 +535,7 @@ void Misc_DrawMenu(int& menuIndex, float x, float y, float w, float h) {
         }
     }
 
-    if (IsKeyJustUp(VK_NUMPAD5) || PadPressed(BTN_A)) {
+    if (IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || PadPressed(BTN_A)) {
         // Handle toggles
         if (menuIndex != 5 && menuIndex != 9 && menuIndex != 15 && miscToggles[menuIndex] != nullptr) {
             bool* pToggle = miscToggles[menuIndex];

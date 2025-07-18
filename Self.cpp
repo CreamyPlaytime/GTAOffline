@@ -372,9 +372,9 @@ void Self_DrawMenu(int& menuIndex, float x, float y, float w, float h) {
 
     ClampMenuIndex(menuIndex, currentNum);
 
-    if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP)) menuIndex = (menuIndex - 1 + currentNum) % currentNum;
-    if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) menuIndex = (menuIndex + 1) % currentNum;
-    if (IsKeyJustUp(VK_NUMPAD5) || PadPressed(BTN_A)) {
+    if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP)) menuIndex = (menuIndex - 1 + currentNum) % currentNum; //
+    if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) menuIndex = (menuIndex + 1) % currentNum; //
+    if (IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || PadPressed(BTN_A)) { //
         bool* togglePtr = currentToggles[menuIndex];
         *togglePtr = !(*togglePtr);
         if (togglePtr == &superman && !superman && menuIndex >= selfNum_Normal) {

@@ -356,8 +356,8 @@ void draw_main_menu() {
     // Only process input if the global input delay is 0
     if (inputDelayFrames == 0) {
         int up = 0, down = 0;
-        if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP))   up = 1;
-        if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) down = 1;
+        if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP))   up = 1; //
+        if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) down = 1; //
 
         if (up) {
             menuIndex = (menuIndex - 1 + numOptions) % numOptions;
@@ -370,7 +370,7 @@ void draw_main_menu() {
 
         static bool prevA = false;
         bool currA = PadPressed(BTN_A);
-        if ((IsKeyJustUp(VK_NUMPAD5) || (currA && !prevA))) {
+        if ((IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || (currA && !prevA))) { //
             switch (menuIndex) {
             case 0: menuCategory = CAT_CHARACTER; menuIndex = 0; inputDelayFrames = 10; break;
             case 1: menuCategory = CAT_CHEATS;    menuIndex = 0; inputDelayFrames = 10; break;
@@ -445,8 +445,8 @@ void draw_saveload_menu() {
     // Only process input if the global input delay is 0
     if (inputDelayFrames == 0) {
         int up = 0, down = 0;
-        if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP))   up = 1;
-        if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) down = 1;
+        if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP))   up = 1; //
+        if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) down = 1; //
 
         if (up) {
             saveloadMenuIndex = (saveloadMenuIndex - 1 + numOptions) % numOptions;
@@ -459,7 +459,7 @@ void draw_saveload_menu() {
 
         static bool prevA = false;
         bool currA = PadPressed(BTN_A);
-        if ((IsKeyJustUp(VK_NUMPAD5) || (currA && !prevA))) {
+        if ((IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || (currA && !prevA))) { //
             switch (saveloadMenuIndex) {
             case 0: // Save Custom Character / Save Protagonist (dynamic label)
                 SaveCurrentCharacterData();
@@ -494,39 +494,53 @@ void LoadGameDataInitial() // Renamed from LoadGameData to avoid confusion
     Properties_Reset();
 
     // Determine which character's data to load based on g_lastActiveCharacterIsCustom
-    if (g_lastActiveCharacterIsCustom) {
-        // Load custom character data
-        if (!RequestModel(GAMEPLAY::GET_HASH_KEY("mp_m_freemode_01"))) {
-            UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
-            UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~r~Failed to load custom character model for auto-load."));
-            UI::_DRAW_NOTIFICATION(false, true);
-            // Fallback to protagonist if custom model fails to load
-            // This fallback will now correctly only load data, not try to set model
-            LoadProtagonistData(FRANKLIN_MODEL_HASH); // Default to Franklin
-            return;
-        }
-        PLAYER::SET_PLAYER_MODEL(PLAYER::PLAYER_ID(), GAMEPLAY::GET_HASH_KEY("mp_m_freemode_01"));
-        g_activePlayerModel = GAMEPLAY::GET_HASH_KEY("mp_m_freemode_01");
-        g_isCustomCharacterActive = true;
+    if (g_autoLoadCharacter) {
+        if (g_lastActiveCharacterIsCustom) {
+            // Load custom character data
+            if (!RequestModel(GAMEPLAY::GET_HASH_KEY("mp_m_freemode_01"))) {
+                UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
+                UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~r~Failed to load custom character model for auto-load."));
+                UI::_DRAW_NOTIFICATION(false, true);
+                // Fallback to protagonist if custom model fails to load
+                // This fallback will now correctly only load data, not try to set model
+                LoadProtagonistData(FRANKLIN_MODEL_HASH); // Default to Franklin
+                return;
+            }
+            PLAYER::SET_PLAYER_MODEL(PLAYER::PLAYER_ID(), GAMEPLAY::GET_HASH_KEY("mp_m_freemode_01"));
+            g_activePlayerModel = GAMEPLAY::GET_HASH_KEY("mp_m_freemode_01");
+            g_isCustomCharacterActive = true;
 
-        CharacterCreator_Load(characterFile);
-        Money_Load(playerStatsFile);
-        RankBar_Load(playerStatsFile);
-        RpEvents_Load(xpFile);
-        GunStore_Load();
-        Properties_Load(propertiesFile);
-        CharacterCreator_Apply();
-        UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
-        UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~g~Auto-loaded Custom Character!"));
-        UI::_DRAW_NOTIFICATION(false, true);
+            CharacterCreator_Load(characterFile);
+            Money_Load(playerStatsFile);
+            RankBar_Load(playerStatsFile);
+            RpEvents_Load(xpFile);
+            GunStore_Load();
+            Properties_Load(propertiesFile);
+            CharacterCreator_Apply();
+            UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
+            UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~g~Auto-loaded Custom Character!"));
+            UI::_DRAW_NOTIFICATION(false, true);
+        }
+        else {
+            // Load protagonist data (default to Franklin if last active was protagonist)
+            // This will now correctly only load data, not try to set model
+            LoadProtagonistData(FRANKLIN_MODEL_HASH); // Assumes Franklin as the default protagonist for auto-load
+            UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
+            UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~g~Auto-loaded Protagonist Save!"));
+            UI::_DRAW_NOTIFICATION(false, true);
+        }
     }
     else {
-        // Load protagonist data (default to Franklin if last active was protagonist)
-        // This will now correctly only load data, not try to set model
-        LoadProtagonistData(FRANKLIN_MODEL_HASH); // Assumes Franklin as the default protagonist for auto-load
+        // If not auto-loading, ensure custom character is marked as inactive
+        g_isCustomCharacterActive = false; // Player starts as default protagonist or empty state
         UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
-        UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~g~Auto-loaded Protagonist Save!"));
+        UI::_ADD_TEXT_COMPONENT_STRING(const_cast<char*>("~y~Auto-load character is OFF. Using default character."));
         UI::_DRAW_NOTIFICATION(false, true);
+        // NEW: If not auto-loading, ensure properties are reset to default (unowned) state
+        Properties_Reset();
+        // Also ensure g_lastActiveCharacterIsCustom is set to false if not auto-loading and starting fresh
+        g_lastActiveCharacterIsCustom = false;
+        SaveSettings(); // Persist this state
     }
     WAIT(100); // Small delay to ensure files are read
 }
@@ -795,34 +809,38 @@ void ScriptMain() {
         // Use dynamic controller buttons for menu combo
         bool menuCombo = PadHeld(g_controllerMenuButton1) && PadHeld(g_controllerMenuButton2);
 
-        // Menu Open/Close Logic (Consolidated Toggle)
-        if (inputDelayFrames == 0) { // Only process menu open/close if no global input delay
-            // Use dynamic keyboard key for menu toggle
-            if (IsKeyJustUp(g_keyboardMenuKey) || (menuCombo && !prevMenuCombo)) {
-                menuOpen = !menuOpen; // Toggle menu state
-                menuIndex = 0; // Reset index when toggling
-                menuCategory = CAT_MAIN; // Always go back to main category when toggling
-                inputDelayFrames = 15; // Apply delay after toggling
-            }
+        // Menu Input Logic (Open/Close/Back)
+        if (inputDelayFrames == 0) { // Only process menu input if no global input delay
+            bool currB = PadPressed(BTN_B); // Controller B button state
 
-            // This logic is for going back within sub-menus or closing from main using B/Numpad0
-            bool currB = PadPressed(BTN_B);
-            if (menuOpen && ((currB && !prevB) || IsKeyJustUp(VK_NUMPAD0))) {
+            // --- Menu OPENING Logic ---
+            // Menu opens if the designated keyboard key (g_keyboardMenuKey) is pressed,
+            // OR if the controller combo (RB+A) is pressed,
+            // OR if ENTER is pressed AND the menu is currently CLOSED.
+            if (!menuOpen && (IsKeyJustUp(g_keyboardMenuKey) || IsKeyJustUp(VK_RETURN) || (menuCombo && !prevMenuCombo))) {
+                menuOpen = true; // Open the menu
+                menuIndex = 0; // Reset index to first option
+                menuCategory = CAT_MAIN; // Always start at main category
+                inputDelayFrames = 15; // Apply delay after opening
+            }
+            // --- Menu CLOSING / BACK Logic ---
+            // Menu closes or goes back if the menu is OPEN
+            // AND (B button is pressed, OR Numpad 0 is pressed, OR ESCAPE is pressed, OR BACKSPACE is pressed).
+            else if (menuOpen && ((currB && !prevB) || IsKeyJustUp(VK_NUMPAD0) || IsKeyJustUp(VK_ESCAPE) || IsKeyJustUp(VK_BACK))) {
                 if (menuCategory == CAT_MAIN) {
-                    menuOpen = false;
-                    menuIndex = 0;
+                    menuOpen = false; // Close the menu if on the main category
+                    menuIndex = 0; // Reset index
                     inputDelayFrames = 10; // Apply delay after closing
                 }
                 else {
                     // Go back to main menu from any sub-category
                     menuCategory = CAT_MAIN;
-                    menuIndex = 8; // Set menuIndex to point to 'Settings' in the main menu for consistency
+                    menuIndex = 8; // Set menuIndex to point to 'Settings' in the main menu for consistency (or 0 for top)
                     inputDelayFrames = 10; // Apply delay after category change
                 }
             }
-            prevB = currB;
+            prevB = currB; // Update previous B state for next frame
         }
-
 
         if (menuOpen)
         {

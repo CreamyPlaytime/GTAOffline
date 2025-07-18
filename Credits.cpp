@@ -62,7 +62,8 @@ void draw_credits_menu() {
     // There is only one selectable option, so no up/down navigation is needed.
     menuIndex = 0; // Or whatever index corresponds to the back button
 
-    if (IsKeyJustUp(VK_NUMPAD5) || PadPressed(BTN_A)) {
+    // Corrected: Added VK_RETURN, VK_BACK, VK_ESCAPE for going back
+    if (IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || IsKeyJustUp(VK_BACK) || IsKeyJustUp(VK_ESCAPE) || PadPressed(BTN_A) || PadPressed(BTN_B)) {
         menuCategory = 0; // Go back to CAT_MAIN
         menuIndex = 7;    // Highlight the "Credits" option on the main menu
         inputDelayFrames = 10;

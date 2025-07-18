@@ -214,7 +214,7 @@ void GunStore_Tick() {
         // This prevents endlessly giving ammo if the player already has the weapon
         if (!WEAPON::HAS_PED_GOT_WEAPON(playerPed, weaponHash, false)) {
             // Give weapon with max ammo and select it
-            WEAPON::GIVE_WEAPON_TO_PED(playerPed, weaponHash, 9999, false, true);
+            WEAPON::GIVE_WEAPON_TO_PED(PLAYER::PLAYER_PED_ID(), weaponHash, 9999, false, true);
         }
     }
 }
@@ -250,6 +250,11 @@ void draw_gun_store_menu() {
     UI::_ADD_TEXT_COMPONENT_STRING(moneyBuf);
     UI::_DRAW_TEXT(MENU_X, MENU_Y - 0.08f);
 
+    // Only process input if no global input delay
+    // This check is moved up to apply to all input processing in this function.
+    bool canProcessInput = (inputDelayFrames == 0);
+
+
     if (!inWeaponSelection) {
         // --- Category Selection ---
         const int numOptions = g_weaponCategories.size() + 1;
@@ -265,10 +270,11 @@ void draw_gun_store_menu() {
         DrawMenuOption("Back", MENU_X, optionY + MENU_H * g_weaponCategories.size(), MENU_W, MENU_H, g_weaponCategories.size() == gunCategoryIndex);
 
         // Navigation and activation
-        if (inputDelayFrames == 0) { // Only process input if no global input delay
+        if (canProcessInput) {
             int up = 0, down = 0;
-            if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP))   up = 1;
-            if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) down = 1;
+            // Added arrow key support
+            if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP))   up = 1;
+            if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) down = 1;
 
             if (up) {
                 gunCategoryIndex = (gunCategoryIndex - 1 + numOptions) % numOptions;
@@ -281,8 +287,9 @@ void draw_gun_store_menu() {
 
             static bool prevA_category = false; // Separate static variable for category A button
             bool currA_category = PadPressed(BTN_A);
-            if ((IsKeyJustUp(VK_NUMPAD5) || (currA_category && !prevA_category))) {
-                if (gunCategoryIndex == g_weaponCategories.size()) {
+            // Added Enter key support
+            if ((IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || (currA_category && !prevA_category))) {
+                if (gunCategoryIndex == g_weaponCategories.size()) { // "Back" option selected
                     menuCategory = 0; // CAT_MAIN
                     menuIndex = 6; // Index for Gun Store in main menu
                     inputDelayFrames = 10; // Apply delay after action
@@ -292,6 +299,12 @@ void draw_gun_store_menu() {
                     weaponIndex = 0;
                     inputDelayFrames = 10; // Apply delay after action
                 }
+            }
+            // Allow Back/Escape to go back from category selection
+            if (IsKeyJustUp(VK_NUMPAD0) || IsKeyJustUp(VK_BACK) || IsKeyJustUp(VK_ESCAPE) || PadPressed(BTN_B)) {
+                menuCategory = 0; // CAT_MAIN
+                menuIndex = 6; // Index for Gun Store in main menu
+                inputDelayFrames = 10; // Apply delay after action
             }
             prevA_category = currA_category;
         }
@@ -329,10 +342,11 @@ void draw_gun_store_menu() {
         DrawMenuOption("Back", MENU_X, optionY + MENU_H * selectedCategory.weapons.size(), MENU_W, MENU_H, selectedCategory.weapons.size() == weaponIndex);
 
         // Navigation and activation
-        if (inputDelayFrames == 0) { // Only process input if no global input delay
+        if (canProcessInput) {
             int up = 0, down = 0;
-            if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP))   up = 1; // Corrected: Added IsKeyJustUp(VK_NUMPAD8) for 'up'
-            if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) down = 1;
+            // Added arrow key support
+            if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP))   up = 1;
+            if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) down = 1;
 
             if (up) {
                 weaponIndex = (weaponIndex - 1 + numOptions) % numOptions;
@@ -345,8 +359,9 @@ void draw_gun_store_menu() {
 
             static bool prevA_weapon = false; // Separate static variable for weapon A button
             bool currA_weapon = PadPressed(BTN_A);
-            if ((IsKeyJustUp(VK_NUMPAD5) || (currA_weapon && !prevA_weapon))) {
-                if (weaponIndex == selectedCategory.weapons.size()) {
+            // Added Enter key support
+            if ((IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || (currA_weapon && !prevA_weapon))) {
+                if (weaponIndex == selectedCategory.weapons.size()) { // "Back" option selected
                     inWeaponSelection = false;
                     inputDelayFrames = 10; // Apply delay after action
                 }
@@ -382,6 +397,11 @@ void draw_gun_store_menu() {
                         inputDelayFrames = 10; // Apply delay after action
                     }
                 }
+            }
+            // Allow Back/Escape to go back from weapon selection
+            if (IsKeyJustUp(VK_NUMPAD0) || IsKeyJustUp(VK_BACK) || IsKeyJustUp(VK_ESCAPE) || PadPressed(BTN_B)) {
+                inWeaponSelection = false;
+                inputDelayFrames = 10; // Apply delay after action
             }
             prevA_weapon = currA_weapon;
         }

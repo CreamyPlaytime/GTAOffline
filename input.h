@@ -33,6 +33,15 @@ bool PadHeld(int btn); // Defined in input.cpp
 #define INPUT_JUMP          22   // Spacebar / X
 #define INPUT_SPRINT        21   // Shift / A
 
+// --- Global Settings Variables Declarations (Definitions are in Settings.cpp) ---
+extern bool g_autoLoadCharacter;
+extern bool g_showMoneyDisplay;
+extern bool g_showRankBar;
+
+// Keybinds
+extern int g_keyboardMenuKey;
+extern int g_controllerMenuButton1;
+extern int g_controllerMenuMenuButton2;
 inline bool RT_Held() {
     extern XINPUT_STATE g_padCurr;
     return g_padCurr.Gamepad.bRightTrigger > 32;
@@ -77,10 +86,12 @@ struct InputRepeatState {
 
 // Keyboard repeat for menu navigation/sliders
 inline bool IsKeyJustUp(int vkey) {
-    static InputRepeatState state[16];
+    // IMPORTANT: Increased array size to accommodate more distinct keys for repeat logic.
+    // If you encounter "vector errors" related to `state` in input.h, it might be due to your compiler
+    // not supporting C++11 or later, or not compiling with C++11/14/17 flags.
+    static InputRepeatState state[30]; // Changed from 16 to 30
     int idx = 0;
-    // Simplified index mapping for common keys used in menu
-    // You might need a more robust mapping if you use many keys for repeat logic
+    // Assign unique indices for common menu keys, including arrow keys and Enter/Esc
     if (vkey == VK_NUMPAD4) idx = 0;
     else if (vkey == VK_NUMPAD6) idx = 1;
     else if (vkey == VK_NUMPAD8) idx = 2;
@@ -90,7 +101,13 @@ inline bool IsKeyJustUp(int vkey) {
     else if (vkey == VK_NUMPAD7) idx = 6;
     else if (vkey == VK_NUMPAD9) idx = 7;
     else if (vkey == VK_NUMPAD0) idx = 8;
-    else idx = 15; // Default for other keys
+    else if (vkey == VK_UP)      idx = 9;   // Up Arrow
+    else if (vkey == VK_DOWN)    idx = 10;  // Down Arrow
+    else if (vkey == VK_LEFT)    idx = 11;  // Left Arrow
+    else if (vkey == VK_RIGHT)   idx = 12;  // Right Arrow
+    else if (vkey == VK_RETURN)  idx = 13;  // Enter Key
+    else if (vkey == VK_ESCAPE)  idx = 14;  // Escape Key
+    else idx = 29; // Default for other keys
 
     bool held = KeyHeld(vkey);
     if (held) {

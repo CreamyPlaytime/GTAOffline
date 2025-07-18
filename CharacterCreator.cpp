@@ -546,13 +546,13 @@ void CharacterCreator_DrawMenu(int& menuIndex, int& menuCategory) {
     // Handle Tab Switching Input
     extern int inputDelayFrames; // Access global input delay
     if (inputDelayFrames == 0) { // Only process tab switching if no global input delay
-        if (IsKeyJustUp(VK_NUMPAD7) || PadPressed(BTN_LB)) {
+        if (IsKeyJustUp(VK_NUMPAD7) || IsKeyJustUp(VK_OEM_4) || PadPressed(BTN_LB)) { //
             creatorPage = (creatorPage + 2) % 3; menuIndex = 0;
-            inputDelayFrames = 10; // Apply delay after tab change
+            inputDelayFrames = 15; // Increased delay from 10 to 15
         }
-        if (IsKeyJustUp(VK_NUMPAD9) || PadPressed(BTN_RB)) {
+        if (IsKeyJustUp(VK_NUMPAD9) || IsKeyJustUp(VK_OEM_6) || PadPressed(BTN_RB)) { //
             creatorPage = (creatorPage + 1) % 3; menuIndex = 0;
-            inputDelayFrames = 10; // Apply delay after tab change
+            inputDelayFrames = 15; // Increased delay from 10 to 15
         }
     }
 
@@ -588,10 +588,10 @@ void CharacterCreator_DrawMenu(int& menuIndex, int& menuCategory) {
 
         int up = 0, down = 0, left = 0, right = 0;
         if (inputDelayFrames == 0) { // Apply input delay to main menu navigation
-            if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP)) up = 1;
-            if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) down = 1;
-            if (IsKeyJustUp(VK_NUMPAD4) || PadPressed(DPAD_LEFT)) left = 1;
-            if (IsKeyJustUp(VK_NUMPAD6) || PadPressed(DPAD_RIGHT)) right = 1;
+            if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP)) up = 1; //
+            if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) down = 1; //
+            if (IsKeyJustUp(VK_NUMPAD4) || IsKeyJustUp(VK_LEFT) || PadPressed(DPAD_LEFT)) left = 1; //
+            if (IsKeyJustUp(VK_NUMPAD6) || IsKeyJustUp(VK_RIGHT) || PadPressed(DPAD_RIGHT)) right = 1; //
 
             if (up) { menuIndex = (menuIndex - 1 + numMainOptions) % numMainOptions; inputDelayFrames = 10; }
             if (down) { menuIndex = (menuIndex + 1) % numMainOptions; inputDelayFrames = 10; }
@@ -611,13 +611,13 @@ void CharacterCreator_DrawMenu(int& menuIndex, int& menuCategory) {
                 case 10: CharacterCreator_NextEyeColor(dir); inputDelayFrames = 10; break;
                 }
             }
-            if (IsKeyJustUp(VK_NUMPAD5) || PadPressed(BTN_A)) {
+            if (IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || PadPressed(BTN_A)) { //
                 if (menuIndex == 0) { creatorCamEnabled = !creatorCamEnabled; inputDelayFrames = 10; }
                 if (menuIndex == 11) { creatorPage = CREATOR_FACE; menuIndex = 0; inputDelayFrames = 10; }
                 if (menuIndex == 12) { creatorPage = CREATOR_CLOTHES; menuIndex = 0; inputDelayFrames = 10; }
             }
         }
-        if (PadPressed(BTN_B)) {
+        if (PadPressed(BTN_B) || IsKeyJustUp(VK_ESCAPE) || IsKeyJustUp(VK_BACK)) { //
             creatorCamEnabled = false;
             wardrobeCamActive = false;
             stop_character_camera();
@@ -642,22 +642,21 @@ void CharacterCreator_DrawMenu(int& menuIndex, int& menuCategory) {
 
         int up = 0, down = 0, left = 0, right = 0;
         if (inputDelayFrames == 0) { // Apply input delay to face menu navigation
-            if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP)) up = 1;
-            if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) down = 1;
-            if (IsKeyJustUp(VK_NUMPAD4) || PadPressed(DPAD_LEFT)) left = 1;
-            if (IsKeyJustUp(VK_NUMPAD6) || PadPressed(DPAD_RIGHT)) right = 1;
+            if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP)) up = 1; //
+            if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) down = 1; //
+            if (IsKeyJustUp(VK_NUMPAD4) || IsKeyJustUp(VK_LEFT) || PadPressed(DPAD_LEFT)) left = 1; //
+            if (IsKeyJustUp(VK_NUMPAD6) || IsKeyJustUp(VK_RIGHT) || PadPressed(DPAD_RIGHT)) right = 1; //
 
             if (up) { menuIndex = (menuIndex - 1 + numFaceOptions) % numFaceOptions; inputDelayFrames = 10; }
             if (down) { menuIndex = (menuIndex + 1) % numFaceOptions; inputDelayFrames = 10; }
 
             int dir = right - left;
-            if (dir && menuIndex < NUM_FACE_FEATURES) { CharacterCreator_NudgeFaceFeature(menuIndex, dir * 0.05f); inputDelayFrames = 10; }
-
-            if (IsKeyJustUp(VK_NUMPAD5) || PadPressed(BTN_A)) {
+            if (dir && menuIndex < NUM_FACE_FEATURES) { CharacterCreator_NudgeFaceFeature(menuIndex, dir * 0.05f); inputDelayFrames = 10; } // Face Feature Nudge
+            if (IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || PadPressed(BTN_A)) { //
                 if (menuIndex == numFaceOptions - 1) { creatorPage = CREATOR_MAIN; menuIndex = 0; inputDelayFrames = 10; }
             }
         }
-        if (PadPressed(BTN_B)) { creatorPage = CREATOR_MAIN; menuIndex = 0; inputDelayFrames = 10; }
+        if (PadPressed(BTN_B) || IsKeyJustUp(VK_ESCAPE) || IsKeyJustUp(VK_BACK)) { creatorPage = CREATOR_MAIN; menuIndex = 0; inputDelayFrames = 10; } //
     }
     else if (creatorPage == CREATOR_CLOTHES) {
         // Updated numClothesOptions for new mask slot and misc accessory
@@ -708,10 +707,10 @@ void CharacterCreator_DrawMenu(int& menuIndex, int& menuCategory) {
 
         int up = 0, down = 0, left = 0, right = 0;
         if (inputDelayFrames == 0) { // Apply input delay to clothes menu navigation
-            if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP)) up = 1;
-            if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) down = 1;
-            if (IsKeyJustUp(VK_NUMPAD4) || PadPressed(DPAD_LEFT)) left = 1;
-            if (IsKeyJustUp(VK_NUMPAD6) || PadPressed(DPAD_RIGHT)) right = 1;
+            if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP)) up = 1; //
+            if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) down = 1; //
+            if (IsKeyJustUp(VK_NUMPAD4) || IsKeyJustUp(VK_LEFT) || PadPressed(DPAD_LEFT)) left = 1; //
+            if (IsKeyJustUp(VK_NUMPAD6) || IsKeyJustUp(VK_RIGHT) || PadPressed(DPAD_RIGHT)) right = 1; //
 
             if (up) { menuIndex = (menuIndex - 1 + numClothesOptions) % numClothesOptions; inputDelayFrames = 10; }
             if (down) { menuIndex = (menuIndex + 1) % numClothesOptions; inputDelayFrames = 10; }
@@ -738,7 +737,7 @@ void CharacterCreator_DrawMenu(int& menuIndex, int& menuCategory) {
                 }
             }
 
-            if (IsKeyJustUp(VK_NUMPAD5) || PadPressed(BTN_A)) {
+            if (IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || PadPressed(BTN_A)) { //
                 if (menuIndex == 16) { // Wardrobe Cam
                     wardrobeCamActive = !wardrobeCamActive;
                     creatorCamEnabled = wardrobeCamActive; // Keep creatorCamEnabled in sync
@@ -751,7 +750,7 @@ void CharacterCreator_DrawMenu(int& menuIndex, int& menuCategory) {
                 }
             }
         }
-        if (PadPressed(BTN_B)) { creatorPage = CREATOR_MAIN; menuIndex = 0; inputDelayFrames = 10; }
+        if (PadPressed(BTN_B) || IsKeyJustUp(VK_ESCAPE) || IsKeyJustUp(VK_BACK)) { creatorPage = CREATOR_MAIN; menuIndex = 0; inputDelayFrames = 10; } //
     }
 
     if (creatorCamEnabled) {

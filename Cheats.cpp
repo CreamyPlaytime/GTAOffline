@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+#define NOMINMAX
 #include "Cheats.h"
 #include "script.h"
 #include "Self.h"
@@ -25,6 +27,8 @@ void Cheats_Tick() {
 
 // This function handles drawing the entire cheat menu, including the header, tabs, and the content of the selected tab.
 void Cheats_DrawMenu(int& menuIndex, float x, float y, float w, float h) {
+    extern int inputDelayFrames; // Declare extern to use global inputDelayFrames
+
     // --- Determine the number of options for the current tab ---
     int numOptions = 0;
     switch (cheatTab) {
@@ -70,13 +74,19 @@ void Cheats_DrawMenu(int& menuIndex, float x, float y, float w, float h) {
     }
 
     // --- Handle Tab Switching Input ---
-    if (IsKeyJustUp(VK_NUMPAD1) || PadPressed(BTN_LB)) {
-        cheatTab = (cheatTab + 2) % 3; // Go left
-        menuIndex = 0;
-    }
-    if (IsKeyJustUp(VK_NUMPAD3) || PadPressed(BTN_RB)) {
-        cheatTab = (cheatTab + 1) % 3; // Go right
-        menuIndex = 0;
+    // Only process input if no global input delay
+    if (inputDelayFrames == 0) {
+        // Corrected: Use VK_NUMPAD7 and VK_OEM_4 for left, VK_NUMPAD9 and VK_OEM_6 for right
+        if (IsKeyJustUp(VK_NUMPAD7) || IsKeyJustUp(VK_OEM_4) || PadPressed(BTN_LB)) {
+            cheatTab = (cheatTab + 2) % 3; // Go left
+            menuIndex = 0;
+            inputDelayFrames = 15; // Increased delay from 10 to 15
+        }
+        if (IsKeyJustUp(VK_NUMPAD9) || IsKeyJustUp(VK_OEM_6) || PadPressed(BTN_RB)) {
+            cheatTab = (cheatTab + 1) % 3; // Go right
+            menuIndex = 0;
+            inputDelayFrames = 15; // Increased delay from 10 to 15
+        }
     }
 
     // 2. Draw the Options List, starting one row below the tab bar.

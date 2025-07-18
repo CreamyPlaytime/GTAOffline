@@ -424,11 +424,11 @@ void Weapons_DrawMenu(int& menuIndex, float x, float y, float w, float h) {
 
     // --- Navigation and Activation Logic (CORRECTED) ---
     ClampMenuIndex(menuIndex, totalOptions);
-    if (IsKeyJustUp(VK_NUMPAD8) || PadPressed(DPAD_UP)) menuIndex = (menuIndex - 1 + totalOptions) % totalOptions;
-    if (IsKeyJustUp(VK_NUMPAD2) || PadPressed(DPAD_DOWN)) menuIndex = (menuIndex + 1) % totalOptions;
+    if (IsKeyJustUp(VK_NUMPAD8) || IsKeyJustUp(VK_UP) || PadPressed(DPAD_UP)) menuIndex = (menuIndex - 1 + totalOptions) % totalOptions;
+    if (IsKeyJustUp(VK_NUMPAD2) || IsKeyJustUp(VK_DOWN) || PadPressed(DPAD_DOWN)) menuIndex = (menuIndex + 1) % totalOptions;
 
     // Activation now simply toggles the boolean for ALL weapon options
-    if (IsKeyJustUp(VK_NUMPAD5) || PadPressed(BTN_A)) {
+    if (IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || PadPressed(BTN_A)) {
         if (menuIndex < numToggles) {
             *weapToggles[menuIndex] = !*weapToggles[menuIndex];
         }
@@ -436,8 +436,9 @@ void Weapons_DrawMenu(int& menuIndex, float x, float y, float w, float h) {
 
     // --- Slider Adjustment Logic ---
     int direction = 0;
-    if (IsKeyJustUp(VK_NUMPAD4) || PadPressed(DPAD_LEFT))  direction = -1;
-    if (IsKeyJustUp(VK_NUMPAD6) || PadPressed(DPAD_RIGHT)) direction = 1;
+    // Corrected: Added IsKeyJustUp(VK_LEFT) and IsKeyJustUp(VK_RIGHT) for keyboard arrows
+    if (IsKeyJustUp(VK_NUMPAD4) || IsKeyJustUp(VK_LEFT) || PadPressed(DPAD_LEFT))  direction = -1;
+    if (IsKeyJustUp(VK_NUMPAD6) || IsKeyJustUp(VK_RIGHT) || PadPressed(DPAD_RIGHT)) direction = 1;
 
     if (direction != 0 && menuIndex >= numToggles) {
         int sliderIndex = menuIndex - numToggles;
