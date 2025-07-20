@@ -361,27 +361,27 @@ void draw_main_menu() {
 
         if (up) {
             menuIndex = (menuIndex - 1 + numOptions) % numOptions;
-            inputDelayFrames = 10; // Apply delay after navigation
+            inputDelayFrames = 15; // Apply delay after navigation (increased from 10)
         }
         if (down) {
             menuIndex = (menuIndex + 1) % numOptions;
-            inputDelayFrames = 10; // Apply delay after navigation
+            inputDelayFrames = 15; // Apply delay after navigation (increased from 10)
         }
 
         static bool prevA = false;
         bool currA = PadPressed(BTN_A);
         if ((IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || (currA && !prevA))) { //
             switch (menuIndex) {
-            case 0: menuCategory = CAT_CHARACTER; menuIndex = 0; inputDelayFrames = 10; break;
-            case 1: menuCategory = CAT_CHEATS;    menuIndex = 0; inputDelayFrames = 10; break;
-            case 2: menuCategory = CAT_VEHICLE;   menuIndex = 0; inputDelayFrames = 10; break;
-            case 3: menuCategory = CAT_SAVELOAD;  menuIndex = 0; inputDelayFrames = 10; break;
-            case 4: menuCategory = CAT_CAR_SHOP;  menuIndex = 0; inputDelayFrames = 10; break;
-            case 5: menuCategory = CAT_GARAGE;    menuIndex = 0; inputDelayFrames = 10; break;
-            case 6: menuCategory = CAT_GUN_STORE; menuIndex = 0; inputDelayFrames = 10; break;
-            case 7: menuCategory = CAT_CREDITS;   menuIndex = 0; inputDelayFrames = 10; break;
-            case 8: menuCategory = CAT_SETTINGS;  menuIndex = 0; inputDelayFrames = 10; break; // Handle Settings
-            case 9: menuOpen = false;             menuIndex = 0; inputDelayFrames = 10; break; // Close Menu is now case 9
+            case 0: menuCategory = CAT_CHARACTER; menuIndex = 0; inputDelayFrames = 15; break; // Increased from 10
+            case 1: menuCategory = CAT_CHEATS;    menuIndex = 0; inputDelayFrames = 15; break; // Increased from 10
+            case 2: menuCategory = CAT_VEHICLE;   menuIndex = 0; inputDelayFrames = 15; break; // Increased from 10
+            case 3: menuCategory = CAT_SAVELOAD;  menuIndex = 0; inputDelayFrames = 15; break; // Increased from 10
+            case 4: menuCategory = CAT_CAR_SHOP;  menuIndex = 0; inputDelayFrames = 15; break; // Increased from 10
+            case 5: menuCategory = CAT_GARAGE;    menuIndex = 0; inputDelayFrames = 15; break; // Increased from 10
+            case 6: menuCategory = CAT_GUN_STORE; menuIndex = 0; inputDelayFrames = 15; break; // Increased from 10
+            case 7: menuCategory = CAT_CREDITS;   menuIndex = 0; inputDelayFrames = 15; break; // Increased from 10
+            case 8: menuCategory = CAT_SETTINGS;  menuIndex = 0; inputDelayFrames = 15; break; // Increased from 10
+            case 9: menuOpen = false;             menuIndex = 0; inputDelayFrames = 25; break; // Increased from 10
             }
         }
         prevA = currA;
@@ -450,11 +450,11 @@ void draw_saveload_menu() {
 
         if (up) {
             saveloadMenuIndex = (saveloadMenuIndex - 1 + numOptions) % numOptions;
-            inputDelayFrames = 10; // Apply delay after navigation
+            inputDelayFrames = 15; // Apply delay after navigation (increased from 10)
         }
         if (down) {
             saveloadMenuIndex = (saveloadMenuIndex + 1) % numOptions;
-            inputDelayFrames = 10; // Apply delay after navigation
+            inputDelayFrames = 15; // Apply delay after navigation (increased from 10)
         }
 
         static bool prevA = false;
@@ -463,20 +463,20 @@ void draw_saveload_menu() {
             switch (saveloadMenuIndex) {
             case 0: // Save Custom Character / Save Protagonist (dynamic label)
                 SaveCurrentCharacterData();
-                inputDelayFrames = 10;
+                inputDelayFrames = 15; // Increased from 10
                 break;
             case 1: // Load Custom Character
                 LoadCustomCharacterData();
-                inputDelayFrames = 10;
+                inputDelayFrames = 15; // Increased from 10
                 break;
             case 2: // Load Protagonist (consolidated)
                 // When loading the protagonist save, we'll default to Franklin's model.
                 // The actual save data (money, rank, etc.) will be the shared protagonist data.
                 LoadProtagonistData(FRANKLIN_MODEL_HASH); // Default to Franklin for loading protagonist save
-                inputDelayFrames = 10;
+                inputDelayFrames = 15; // Increased from 10
                 break;
             case 3: // Back
-                menuCategory = CAT_MAIN; menuIndex = 3; saveloadMenuIndex = 0; inputDelayFrames = 10; // Go back
+                menuCategory = CAT_MAIN; menuIndex = 3; saveloadMenuIndex = 0; inputDelayFrames = 15; // Increased from 10
                 break;
             default:
                 // This case should ideally not be reached with proper clamping
@@ -808,38 +808,41 @@ void ScriptMain() {
 
         // Use dynamic controller buttons for menu combo
         bool menuCombo = PadHeld(g_controllerMenuButton1) && PadHeld(g_controllerMenuButton2);
+        static bool prevMenuCombo = false; // Need to declare prevMenuCombo as static in ScriptMain
 
-        // Menu Input Logic (Open/Close/Back)
-        if (inputDelayFrames == 0) { // Only process menu input if no global input delay
+        // Menu Input Logic (Toggle Open/Close, Back)
+        if (inputDelayFrames == 0) {
             bool currB = PadPressed(BTN_B); // Controller B button state
+            bool menuOpenKeyJustUp = IsKeyJustUp(g_keyboardMenuKey);
+            bool controllerMenuComboJustActivated = (menuCombo && !prevMenuCombo);
 
-            // --- Menu OPENING Logic ---
-            // Menu opens if the designated keyboard key (g_keyboardMenuKey) is pressed,
-            // OR if the controller combo (RB+A) is pressed,
-            // OR if ENTER is pressed AND the menu is currently CLOSED.
-            if (!menuOpen && (IsKeyJustUp(g_keyboardMenuKey) || IsKeyJustUp(VK_RETURN) || (menuCombo && !prevMenuCombo))) {
-                menuOpen = true; // Open the menu
-                menuIndex = 0; // Reset index to first option
-                menuCategory = CAT_MAIN; // Always start at main category
-                inputDelayFrames = 15; // Apply delay after opening
-            }
-            // --- Menu CLOSING / BACK Logic ---
-            // Menu closes or goes back if the menu is OPEN
-            // AND (B button is pressed, OR Numpad 0 is pressed, OR ESCAPE is pressed, OR BACKSPACE is pressed).
-            else if (menuOpen && ((currB && !prevB) || IsKeyJustUp(VK_NUMPAD0) || IsKeyJustUp(VK_ESCAPE) || IsKeyJustUp(VK_BACK))) {
-                if (menuCategory == CAT_MAIN) {
-                    menuOpen = false; // Close the menu if on the main category
-                    menuIndex = 0; // Reset index
-                    inputDelayFrames = 10; // Apply delay after closing
-                }
-                else {
-                    // Go back to main menu from any sub-category
-                    menuCategory = CAT_MAIN;
-                    menuIndex = 8; // Set menuIndex to point to 'Settings' in the main menu for consistency (or 0 for top)
-                    inputDelayFrames = 10; // Apply delay after category change
+            if (menuOpen) {
+                // If menu is open, handle closing or going back
+                if ((currB && !prevB) || IsKeyJustUp(VK_NUMPAD0) || IsKeyJustUp(VK_ESCAPE) || IsKeyJustUp(VK_BACK) || menuOpenKeyJustUp || controllerMenuComboJustActivated) {
+                    if (menuCategory == CAT_MAIN) {
+                        menuOpen = false; // Close the menu if on the main category
+                        menuIndex = 0; // Reset index
+                        inputDelayFrames = 25; // Apply delay after closing (increased from 10/15)
+                    }
+                    else {
+                        // Go back to main menu from any sub-category
+                        menuCategory = CAT_MAIN;
+                        menuIndex = 8; // Set menuIndex to point to 'Settings' in the main menu for consistency
+                        inputDelayFrames = 25; // Apply delay after category change (increased from 10/15)
+                    }
                 }
             }
-            prevB = currB; // Update previous B state for next frame
+            else {
+                // If menu is closed, handle opening
+                if (menuOpenKeyJustUp || controllerMenuComboJustActivated) {
+                    menuOpen = true; // Open the menu
+                    menuIndex = 0; // Reset index to first option
+                    menuCategory = CAT_MAIN; // Always start at main category
+                    inputDelayFrames = 25; // Apply delay after opening (increased from 15)
+                }
+            }
+            prevB = currB;
+            prevMenuCombo = menuCombo; // Update prevMenuCombo at the end of input handling
         }
 
         if (menuOpen)
