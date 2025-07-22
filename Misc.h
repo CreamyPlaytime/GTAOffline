@@ -12,7 +12,7 @@ extern bool teleportPedsToPlayer;
 extern int pedsToTeleportCount;
 extern int bulletExplosionType;
 extern const char* bulletTypeNames[];
-
+extern bool moneyDropActive;
 // Function Declarations
 void Misc_Init();
 void Misc_Tick();

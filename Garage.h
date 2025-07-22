@@ -8,6 +8,7 @@ struct OwnedVehicle {
     Hash hash;
     Blip blip;
     Vehicle vehicle_handle;
+    DWORD invincible_until; // Added for spawn protection timer
 };
 
 // --- Function Declarations ---

@@ -64,6 +64,14 @@ static std::vector<Ped> teleportedPeds;
 static DWORD lastPedTeleportTick = 0; // Cooldown for individual ped teleports
 static const DWORD PED_TELEPORT_COOLDOWN = 1500; // 1.5 seconds between teleports
 
+bool moneyDropActive = false; // Added money drop toggle
+// Increased cooldown for slower drops and to reduce flickering
+static const DWORD MONEY_DROP_COOLDOWN = 500; // 0.5 seconds between drops
+static DWORD lastMoneyDropTick = 0; // Cooldown for money drop
+
+
+// Function declaration from Money.cpp needed for GetWeightedRandomMoney()
+extern int GetWeightedRandomMoney();
 
 // --- Helper function for No Clip ---
 static void GetCameraVectors(Vector3* fwd, Vector3* rgt, Vector3* up) {
@@ -237,6 +245,8 @@ void Misc_Init() {
     teleportPedsToPlayer = false; // Initialize as false for the toggle
     pedsToTeleportCount = 5;
     teleportedPeds.clear(); // Ensure this is clear on init
+
+    moneyDropActive = false; // Initialize money drop as false
 }
 
 // ---- Misc Tab Tick ----
@@ -288,7 +298,7 @@ void Misc_Tick() {
                 time_t now = time(0);
                 struct tm ltm;
                 localtime_s(&ltm, &now);
-                fprintf(f, "[%04d-%02d-%02d %02d:%02d:%02d] X=%.4f, Y=%.4f, Z=%.4f\n",
+                fprintf(f, "[%04d-%02d-%02d %02d:%02d:%02d] X=%.4f, Y=%.4f, Z=%.4f\\n",
                     1900 + ltm.tm_year, 1 + ltm.tm_mon, ltm.tm_mday,
                     ltm.tm_hour, ltm.tm_min, ltm.tm_sec,
                     coords.x, coords.y, coords.z);
@@ -462,10 +472,56 @@ void Misc_Tick() {
             ENTITY::SET_ENTITY_VELOCITY(ped, vel.x * speed, vel.y * speed, vel.z * speed);
         }
     }
+
+    // --- Money Drop Logic ---
+    if (moneyDropActive) {
+        DWORD now = GetTickCount();
+        if (now - lastMoneyDropTick > MONEY_DROP_COOLDOWN) {
+            Ped playerPed = PLAYER::PLAYER_PED_ID();
+            Vector3 playerPos = ENTITY::GET_ENTITY_COORDS(playerPed, true);
+
+            // Using prop_poly_bag_01 for "robbery" money
+            Hash moneyBagModelHash = 0x9CA6F755;
+
+            // Calculate random spawn position within a 6-foot radius around the player
+            float randomAngle = (float)rand() / RAND_MAX * 2.0f * M_PI; // Random angle in radians
+            float randomRadius = (float)rand() / RAND_MAX * 6.0f;       // Random radius up to 6.0f, as requested
+
+            float spawnX = playerPos.x + (randomRadius * sin(randomAngle));
+            float spawnY = playerPos.y + (randomRadius * cos(randomAngle));
+            float spawnZ = playerPos.z + 10.0f; // 10 feet up, as requested for "money rain"
+
+            STREAMING::REQUEST_MODEL(moneyBagModelHash);
+            // DO NOT WAIT(0) here. If the model isn't loaded, we'll try again next tick.
+            if (!STREAMING::HAS_MODEL_LOADED(moneyBagModelHash)) {
+                lastMoneyDropTick = now; // Reset cooldown so it doesn't try too fast while waiting for model
+                return; // Skip this drop attempt and try again on the next tick
+            }
+
+            // Create the money bag object. The existing Money.cpp logic will detect it and assign value.
+            // Signature: CREATE_OBJECT(Hash modelHash, float x, float y, float z, BOOL networkHandle, BOOL createHandle, BOOL dynamic)
+            Object droppedMoney = OBJECT::CREATE_OBJECT(moneyBagModelHash, spawnX, spawnY, spawnZ, 0, 1, 1);
+
+            // Add a small delay after creation, before applying physics changes, to ensure the object is fully initialized.
+            // This WAIT is now inside the if (DOES_ENTITY_EXIST) block, to only affect valid objects.
+            // Removed WAIT(10) here, as it can still cause stutter if too frequent.
+
+            STREAMING::SET_MODEL_AS_NO_LONGER_NEEDED(moneyBagModelHash);
+
+            if (ENTITY::DOES_ENTITY_EXIST(droppedMoney)) {
+                // Explicitly set gravity for the object
+                ENTITY::SET_ENTITY_HAS_GRAVITY(droppedMoney, true);
+
+                // Give a slight initial downward push to ensure it starts falling immediately
+                ENTITY::SET_ENTITY_VELOCITY(droppedMoney, 0.0f, 0.0f, -0.5f);
+            }
+            lastMoneyDropTick = now;
+        }
+    }
 }
 
 int Misc_GetNumOptions() {
-    return 16;
+    return 17; // Updated for new Money Drop option at the very end
 }
 
 void Misc_DrawMenu(int& menuIndex, float x, float y, float w, float h) {
@@ -474,21 +530,23 @@ void Misc_DrawMenu(int& menuIndex, float x, float y, float w, float h) {
         "Slow Motion", "Refill Health/Armor", "Give $1,000,000", "Wanted Up", "Wanted Down",
         "Bullet Explosion Type", "Hash Gun", "Populate Now", "Peds Follow You", "Follower Count",
         "All Peds Follow You", "No Hostile Peds", "No Clip", "Save Current Coords",
-        "Teleport Peds To You", // This is now a toggle
-        "Teleport Count"
+        "Teleport Peds To You",
+        "Teleport Count",
+        "Money Drop" // Moved to the last position
     };
     bool* miscToggles[] = {
         &slowmo, &refillHPArmor, &moneyCheat, &wantedUp, &wantedDown, nullptr, &hashGunActive, &populateNow,
         &pedsFollowEnabled, nullptr, &followAllPeds, &noHostilePeds, &noClipMode, &savePlayerCoords,
-        &teleportPedsToPlayer, // Bind to the toggle variable
-        nullptr
+        &teleportPedsToPlayer,
+        nullptr,
+        &moneyDropActive // Bind to the new toggle variable
     };
     int miscNum = sizeof(miscOpts) / sizeof(miscOpts[0]);
     char valueBuffer[128];
 
     for (int i = 0; i < miscNum; ++i) {
         // Actions are options that reset after one use (or are explicitly triggered)
-        // Note: Teleport Peds To You (index 14) is now a toggle, not an action in this context
+        // Note: Money Drop (last index) is now a toggle
         bool isAction = (i == 1 || i == 2 || i == 3 || i == 4 || i == 13);
         float currentY = y + h * i;
         bool isSelected = (i == menuIndex);
@@ -501,7 +559,7 @@ void Misc_DrawMenu(int& menuIndex, float x, float y, float w, float h) {
             sprintf_s(valueBuffer, "< %d >", followerCount);
             DrawPairedMenuOption(miscOpts[i], valueBuffer, x, currentY, w, h, isSelected);
         }
-        else if (i == 15) { // Teleport Count slider
+        else if (i == 15) { // Teleport Count slider 
             sprintf_s(valueBuffer, "< %d >", pedsToTeleportCount);
             DrawPairedMenuOption(miscOpts[i], valueBuffer, x, currentY, w, h, isSelected);
         }

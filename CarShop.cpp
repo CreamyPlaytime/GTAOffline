@@ -129,8 +129,6 @@ void CarShop_Init() {
     VehicleCategory emergency;
     emergency.name = "Emergency";
     emergency.vehicles.push_back({ "Police Cruiser", GAMEPLAY::GET_HASH_KEY("POLICE"), 50000 });
-    emergency.vehicles.push_back({ "FIB Buffalo", GAMEPLAY::GET_HASH_KEY("FIBUFFALO"), 55000 });
-    emergency.vehicles.push_back({ "FIB Granger", GAMEPLAY::GET_HASH_KEY("FIB2"), 60000 });
     emergency.vehicles.push_back({ "Ambulance", GAMEPLAY::GET_HASH_KEY("AMBULANCE"), 55000 });
     emergency.vehicles.push_back({ "Fire Truck", GAMEPLAY::GET_HASH_KEY("FIRETRUK"), 60000 });
     g_vehicleCategories.push_back(emergency);

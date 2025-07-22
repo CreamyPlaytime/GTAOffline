@@ -14,7 +14,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <limits>
+#include <limits> // Required for INT_MAX
 
 // --- XP/Rank State ---
 static int s_playerXP = 0, s_playerLevel = 1, s_xpToNext = 800;
@@ -23,6 +23,115 @@ static ULONGLONG s_recentRPGainTime = 0;
 static bool s_inVehicleLastFrame = false;
 static int s_lastWantedLevel = 0;
 static Vehicle s_lastVehicle = 0;
+
+// Max player level is rank 8000.
+const int MAX_PLAYER_LEVEL = 8000;
+
+// XP TABLE ARRAY FOR RANKS < 99 (XP needed to go from current rank to next rank)
+// Adjusted for more gradual progression
+const int xpToNextLevelData[] =
+{
+    // Index 0 is placeholder (level starts at 1, so data[1] is for Rank 1->2)
+    0,
+    800,     // Rank 1 -> 2
+    1000,    // Rank 2 -> 3
+    1200,    // Rank 3 -> 4
+    1500,    // Rank 4 -> 5
+    1800,    // Rank 5 -> 6
+    2200,    // Rank 6 -> 7
+    2600,    // Rank 7 -> 8
+    3000,    // Rank 8 -> 9
+    3500,    // Rank 9 -> 10
+    4000,    // Rank 10 -> 11
+    4500,    // Rank 11 -> 12
+    5000,    // Rank 12 -> 13
+    5500,    // Rank 13 -> 14
+    6000,    // Rank 14 -> 15
+    6600,    // Rank 15 -> 16
+    7200,    // Rank 16 -> 17
+    7800,    // Rank 17 -> 18
+    8500,    // Rank 18 -> 19
+    9200,    // Rank 19 -> 20
+    10000,   // Rank 20 -> 21
+    11000,   // Rank 21 -> 22
+    12000,   // Rank 22 -> 23
+    13000,   // Rank 23 -> 24
+    14000,   // Rank 24 -> 25
+    15000,   // Rank 25 -> 26
+    16000,   // Rank 26 -> 27
+    17000,   // Rank 27 -> 28
+    18000,   // Rank 28 -> 29
+    19000,   // Rank 29 -> 30
+    20000,   // Rank 30 -> 31
+    21000,   // Rank 31 -> 32
+    22000,   // Rank 32 -> 33
+    23000,   // Rank 33 -> 34
+    24000,   // Rank 34 -> 35
+    25000,   // Rank 35 -> 36
+    26000,   // Rank 36 -> 37
+    27000,   // Rank 37 -> 38
+    28000,   // Rank 38 -> 39
+    29000,   // Rank 39 -> 40
+    30000,   // Rank 40 -> 41
+    31000,   // Rank 41 -> 42
+    32000,   // Rank 42 -> 43
+    33000,   // Rank 43 -> 44
+    34000,   // Rank 44 -> 45
+    35000,   // Rank 45 -> 46
+    36000,   // Rank 46 -> 47
+    37000,   // Rank 47 -> 48
+    38000,   // Rank 48 -> 49
+    39000,   // Rank 49 -> 50
+    40000,   // Rank 50 -> 51
+    41000,   // Rank 51 -> 52
+    42000,   // Rank 52 -> 53
+    43000,   // Rank 53 -> 54
+    44000,   // Rank 54 -> 55
+    45000,   // Rank 55 -> 56
+    46000,   // Rank 56 -> 57
+    47000,   // Rank 57 -> 58
+    48000,   // Rank 58 -> 59
+    49000,   // Rank 59 -> 60
+    50000,   // Rank 60 -> 61
+    51000,   // Rank 61 -> 62
+    52000,   // Rank 62 -> 63
+    53000,   // Rank 63 -> 64
+    54000,   // Rank 64 -> 65
+    55000,   // Rank 65 -> 66
+    56000,   // Rank 66 -> 67
+    57000,   // Rank 67 -> 68
+    58000,   // Rank 68 -> 69
+    59000,   // Rank 69 -> 70
+    60000,   // Rank 70 -> 71
+    61000,   // Rank 71 -> 72
+    62000,   // Rank 72 -> 73
+    63000,   // Rank 73 -> 74
+    64000,   // Rank 74 -> 75
+    65000,   // Rank 75 -> 76
+    66000,   // Rank 76 -> 77
+    67000,   // Rank 77 -> 78
+    68000,   // Rank 78 -> 79
+    69000,   // Rank 79 -> 80
+    70000,   // Rank 80 -> 81
+    71000,   // Rank 81 -> 82
+    72000,   // Rank 82 -> 83
+    73000,   // Rank 83 -> 84
+    74000,   // Rank 84 -> 85
+    75000,   // Rank 85 -> 86
+    76000,   // Rank 86 -> 87
+    77000,   // Rank 87 -> 88
+    78000,   // Rank 88 -> 89
+    79000,   // Rank 89 -> 90
+    80000,   // Rank 90 -> 91
+    81000,   // Rank 91 -> 92
+    82000,   // Rank 92 -> 93
+    83000,   // Rank 93 -> 94
+    84000,   // Rank 94 -> 95
+    85000,   // Rank 95 -> 96
+    86000,   // Rank 96 -> 97
+    87000,   // Rank 97 -> 98
+    88000    // Rank 98 -> 99
+};
 
 // --- Car Delivery System ---
 static const float DELIVERY_ZONE_RADIUS = 15.0f;
@@ -78,6 +187,33 @@ void RpEvents_Load(const char* path)
         else if (strcmp(line, "xpToNext") == 0) s_xpToNext = atoi(val);
     }
     fclose(f);
+
+    // --- Validate loaded values and correct if out of range ---
+    if (s_playerLevel < 1) s_playerLevel = 1; // Minimum level is 1
+    if (s_playerLevel > MAX_PLAYER_LEVEL) s_playerLevel = MAX_PLAYER_LEVEL; // Cap at max level
+
+    // Recalculate xpToNext based on loaded level to ensure it's always valid
+    // This handles cases where xpToNext might be corrupted or not match the level curve.
+    if (s_playerLevel >= 1 && s_playerLevel < (sizeof(xpToNextLevelData) / sizeof(xpToNextLevelData[0]))) {
+        s_xpToNext = xpToNextLevelData[s_playerLevel];
+    }
+    else if (s_playerLevel >= (sizeof(xpToNextLevelData) / sizeof(xpToNextLevelData[0]))) { // For level 99 and above
+        s_xpToNext = (int)((float)s_playerLevel * 1000.0f + 50000.0f);
+        // Ensure it doesn't overflow or become too small/large unexpectedly
+        if (s_xpToNext <= 0) s_xpToNext = 100000; // Smallest positive default
+        if (s_xpToNext > INT_MAX / 2) s_xpToNext = INT_MAX / 2; // Prevent overflow
+    }
+    else { // Fallback for any unexpected level value, should not be reached with validation above
+        s_xpToNext = 800; // Default for level 1 (corresponds to xpToNextLevelData[1])
+    }
+    if (s_playerXP < 0) s_playerXP = 0; // XP cannot be negative
+    if (s_playerXP >= s_xpToNext && s_playerLevel < MAX_PLAYER_LEVEL) {
+        // If loaded XP is already enough for next level but not max level,
+        // it means a level-up might have been missed or data is slightly off.
+        // For now, cap current XP to just below next level to avoid an immediate level-up loop on load.
+        // The normal RpEvents_Reward logic will handle the actual level-up next tick if player gains more RP.
+        s_playerXP = s_xpToNext - 1;
+    }
 }
 
 // ----- XP/Level get/set helpers -----
@@ -90,155 +226,47 @@ void RpEvents_SetXP(int v) { s_playerXP = v; }
 void RpEvents_SetLevel(int v) { s_playerLevel = v; }
 void RpEvents_SetXPToNext(int v) { s_xpToNext = v; }
 
-// XP TABLE ARRAY FOR RANKS < 100
-const int xpToNextLevelData[] = 
-{
-    0, // Placeholder for index 0 or XP to reach Rank 1
-    800, // XP to go from Rank 1 to Rank 2
-    2100, // XP to go from Rank 2 to Rank 3
-    3800, // XP to go from Rank 3 to Rank 4
-    6100, // XP to go from Rank 4 to Rank 5
-    9500, // XP to go from Rank 5 to Rank 6
-    12500, // XP to go from Rank 6 to Rank 7
-    16000, // XP to go from Rank 7 to Rank 8
-    19800, // XP to go from Rank 8 to Rank 9
-    24000, // XP to go from Rank 9 to Rank 10
-    28500, // XP to go from Rank 10 to Rank 11
-    33400, // XP to go from Rank 11 to Rank 12
-    38700, // XP to go from Rank 12 to Rank 13
-    44200, // XP to go from Rank 13 to Rank 14
-    50200, // XP to go from Rank 14 to Rank 15
-    56400, // XP to go from Rank 15 to Rank 16
-    63000, // XP to go from Rank 16 to Rank 17
-    69900, // XP to go from Rank 17 to Rank 18
-    77100, // XP to go from Rank 18 to Rank 19
-    84700, // XP to go from Rank 19 to Rank 20
-    92500, // XP to go from Rank 20 to Rank 21
-    100700, // XP to go from Rank 21 to Rank 22
-    109200, // XP to go from Rank 22 to Rank 23
-    118000, // XP to go from Rank 23 to Rank 24
-    127100, // XP to go from Rank 24 to Rank 25
-    136500, // XP to go from Rank 25 to Rank 26
-    146200, // XP to go from Rank 26 to Rank 27
-    156200, // XP to go from Rank 27 to Rank 28
-    166500, // XP to go from Rank 28 to Rank 29
-    177100, // XP to go from Rank 29 to Rank 30
-    188000, // XP to go from Rank 30 to Rank 31
-    199200, // XP to go from Rank 31 to Rank 32
-    210700, // XP to go from Rank 32 to Rank 33
-    224000, // XP to go from Rank 33 to Rank 34
-    234500, // XP to go from Rank 34 to Rank 35
-    246800, // XP to go from Rank 35 to Rank 36
-    259400, // XP to go from Rank 36 to Rank 37
-    272300, // XP to go from Rank 37 to Rank 38
-    285500, // XP to go from Rank 38 to Rank 39
-    299000, // XP to go from Rank 39 to Rank 40
-    312700, // XP to go from Rank 40 to Rank 41
-    326800, // XP to go from Rank 41 to Rank 42
-    341000, // XP to go from Rank 42 to Rank 43
-    355600, // XP to go from Rank 43 to Rank 44
-    370500, // XP to go from Rank 44 to Rank 45
-    385600, // XP to go from Rank 45 to Rank 46
-    401000, // XP to go from Rank 46 to Rank 47
-    416600, // XP to go from Rank 47 to Rank 48
-    432600, // XP to go from Rank 48 to Rank 49
-    448800, // XP to go from Rank 49 to Rank 50
-    465200, // XP to go from Rank 50 to Rank 51
-    482000, // XP to go from Rank 51 to Rank 52
-    499000, // XP to go from Rank 52 to Rank 53
-    516300, // XP to go from Rank 53 to Rank 54
-    533800, // XP to go from Rank 54 to Rank 55
-    551600, // XP to go from Rank 55 to Rank 56
-    569600, // XP to go from Rank 56 to Rank 57
-    588000, // XP to go from Rank 57 to Rank 58
-    606500, // XP to go from Rank 58 to Rank 59
-    625400, // XP to go from Rank 59 to Rank 60
-    644500, // XP to go from Rank 60 to Rank 61
-    663800, // XP to go from Rank 61 to Rank 62
-    683400, // XP to go from Rank 62 to Rank 63
-    703300, // XP to go from Rank 63 to Rank 64
-    723400, // XP to go from Rank 64 to Rank 65
-    743800, // XP to go from Rank 65 to Rank 66
-    764500, // XP to go from Rank 66 to Rank 67
-    785400, // XP to go from Rank 67 to Rank 68
-    806500, // XP to go from Rank 68 to Rank 69
-    827900, // XP to go from Rank 69 to Rank 70
-    849600, // XP to go from Rank 70 to Rank 71
-    871500, // XP to go from Rank 71 to Rank 72
-    893600, // XP to go from Rank 72 to Rank 73
-    916000, // XP to go from Rank 73 to Rank 74
-    938700, // XP to go from Rank 74 to Rank 75
-    961600, // XP to go from Rank 75 to Rank 76
-    984700, // XP to go from Rank 76 to Rank 77
-    1008100, // XP to go from Rank 77 to Rank 78
-    1031800, // XP to go from Rank 78 to Rank 79
-    1055700, // XP to go from Rank 79 to Rank 80
-    1079800, // XP to go from Rank 80 to Rank 81
-    1104200, // XP to go from Rank 81 to Rank 82
-    1128800, // XP to go from Rank 82 to Rank 83
-    1153700, // XP to go from Rank 83 to Rank 84
-    1178800, // XP to go from Rank 84 to Rank 85
-    1204200, // XP to go from Rank 85 to Rank 86
-    1229800, // XP to go from Rank 86 to Rank 87
-    1255600, // XP to go from Rank 87 to Rank 88
-    1281700, // XP to go from Rank 88 to Rank 89
-    1308100, // XP to go from Rank 89 to Rank 90
-    1334600, // XP to go from Rank 90 to Rank 91
-    1361400, // XP to go from Rank 91 to Rank 92
-    1388500, // XP to go from Rank 92 to Rank 93
-    1415800, // XP to go from Rank 93 to Rank 94
-    1443300, // XP to go from Rank 94 to Rank 95
-    1471100, // XP to go from Rank 95 to Rank 96
-    1499100, // XP to go from Rank 96 to Rank 97
-    1527300, // XP to go from Rank 97 to Rank 98
-    1555800  // XP to go from Rank 98 to Rank 99
-};
-
-// Max player level is rank 8000.
-const int MAX_PLAYER_LEVEL = 8000;
 
 // ----- Core XP Reward logic + Leveling System -----
-void RpEvents_Reward(int amount, const char* msg) 
+void RpEvents_Reward(int amount, const char* msg)
 {
     s_playerXP += amount;
     s_recentRPGain = amount;
     s_recentRPGainTime = GetTickCount64();
 
-    while (s_playerXP >= s_xpToNext) 
+    while (s_playerLevel < MAX_PLAYER_LEVEL && s_playerXP >= s_xpToNext)
     {
-        // This block is crucial for capping the level
-        if (s_playerLevel >= MAX_PLAYER_LEVEL) 
-        {
-            s_playerXP = 0; // Optionally reset current XP
-            s_xpToNext = INT_MAX; // Prevent further rank-ups (requires #include <limits>)
-            break; // Exit the loop
-        }
-
         s_playerXP -= s_xpToNext;
         s_playerLevel++;
 
-        // Check if the player level is 99 or higher
-        if (s_playerLevel > 98) 
+        // Calculate s_xpToNext using a more gradual scaling
+        if (s_playerLevel >= 1 && s_playerLevel < (sizeof(xpToNextLevelData) / sizeof(xpToNextLevelData[0])))
         {
-            // Calculate s_xpToNext using function f(x) = 25x^2 + 23575x - 1023150
-            // where x is the current rank -> "s_playerLevel".
-            s_xpToNext = (25 * s_playerLevel * s_playerLevel) + (23575 * s_playerLevel) - 1023150;
-        } 
-        else 
-        {
-            // For levels 1 to 99, XP needed to rank up will be acquired from the lookup table.
-            if (s_playerLevel >= 1 && s_playerLevel < (sizeof(xpToNextLevelData) / sizeof(xpToNextLevelData[0]))) 
-            {
-                s_xpToNext = xpToNextLevelData[s_playerLevel];
-            }
+            // Use lookup table for levels 1 to 98 (index s_playerLevel corresponds to XP for s_playerLevel -> s_playerLevel+1)
+            s_xpToNext = xpToNextLevelData[s_playerLevel];
         }
-        
+        else // For levels 99 and above
+        {
+            // A more linear scaling formula: XP = current_level * 1000 + 50000
+            // This is more gradual than the original quadratic function for higher levels.
+            s_xpToNext = (int)((float)s_playerLevel * 1000.0f + 50000.0f);
+
+            // Safeguard against extreme values (unlikely with this formula but good practice)
+            if (s_xpToNext <= 0) s_xpToNext = 100000; // Ensure a positive value
+            if (s_xpToNext > INT_MAX / 2) s_xpToNext = INT_MAX / 2; // Prevent overflow
+        }
+
         UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
         UI::_ADD_TEXT_COMPONENT_STRING("~y~LEVEL UP!");
         UI::_DRAW_NOTIFICATION(false, false);
     }
-    
-    if (msg) 
+    // If player reaches MAX_PLAYER_LEVEL, ensure XP is capped and xpToNext prevents further level-ups
+    if (s_playerLevel >= MAX_PLAYER_LEVEL) {
+        s_playerXP = 0; // Reset current XP, player is maxed out
+        s_xpToNext = INT_MAX; // Set XP to next level to max to prevent further level-up notifications
+    }
+
+    if (msg)
     {
         UI::_SET_NOTIFICATION_TEXT_ENTRY("STRING");
         UI::_ADD_TEXT_COMPONENT_STRING((char*)msg);
@@ -246,7 +274,7 @@ void RpEvents_Reward(int amount, const char* msg)
     }
 }
 
-// --- Car Delivery Logic ---
+// --- Car Delivery System ---
 void RpEvents_CarDeliveryCheck() {
     Ped playerPed = PLAYER::PLAYER_PED_ID();
     Vector3 playerPos = ENTITY::GET_ENTITY_COORDS(playerPed, true);
@@ -382,11 +410,12 @@ void RpEvents_Tick()
 }
 
 // ----- Module Initialization -----
-void RpEvents_Init() 
+void RpEvents_Init()
 {
     s_playerXP = 0;
     s_playerLevel = 1;
-    s_xpToNext = 800;
+    // Initial XP to next level for level 1 (updated for new scaling)
+    s_xpToNext = xpToNextLevelData[1];
     s_recentRPGain = 0;
     s_recentRPGainTime = 0;
     s_inVehicleLastFrame = false;
@@ -394,6 +423,9 @@ void RpEvents_Init()
     s_lastVehicle = 0;
     s_deliveredVehicles.clear();
     s_lastDeliveryTime = 0; // Initialize cooldown timer
+
+    // The RpEvents_Load function will set the correct s_xpToNext based on s_playerLevel if a save exists.
+    // Otherwise, it will remain at the initial value set above.
 
     if (s_deliveryBlip != 0 && UI::DOES_BLIP_EXIST(s_deliveryBlip)) {
         UI::REMOVE_BLIP(&s_deliveryBlip);
