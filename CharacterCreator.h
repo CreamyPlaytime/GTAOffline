@@ -79,6 +79,11 @@ void CharacterCreator_NextProp(int propSlot, int dir);       // New function for
 void CharacterCreator_NextPropTexture(int propSlot, int dir); // New function for prop texture variations
 void CharacterCreator_NextEyeColor(int dir);
 
+// ADDED: Beard customization functions
+void CharacterCreator_NextBeard(int dir);
+void CharacterCreator_NextBeardColor(int dir);
+
+
 // Added declarations (corrected arguments)
 void CharacterCreator_NextMaskTexture(int slot, int dir);
 void CharacterCreator_NextMask(int slot, int dir);
@@ -95,6 +100,8 @@ extern bool creatorCamEnabled;
 struct CharacterCreatorState {
     int gender, dadIdx, momIdx, blend, skin;
     int hairIdx, hairColor, eyebrowIdx, eyebrowColor, eyeColor;
+    // ADDED: Beard state to struct
+    int beardIdx, beardColor;
     float faceFeatures[20];
     int topIdx, legIdx, shoeIdx;
 };

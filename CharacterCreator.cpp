@@ -25,8 +25,6 @@
 // The actual GTA component ID for masks, used in CharacterCreator_Apply()
 #define GTA_COMPONENT_MASK_SLOT 1
 
-// Prop slot indices (props) - PROP_SLOT_MASK_OLD is no longer used, removed for clarity.
-
 // --- GTA ONLINE PARENT DATA ---
 struct ParentEntry { const char* name; int index; };
 static const ParentEntry dads[] = {
@@ -55,10 +53,16 @@ static const char* FACE_FEATURE_NAMES[NUM_FACE_FEATURES] = {
 static const int NUM_HAIRSTYLES = 74, NUM_HAIRCOLORS = 64, NUM_EYEBROWS = 34, NUM_EYEBROWCOLORS = 64, NUM_EYECOLORS = 32, NUM_TOPS = 350, NUM_UNDERSHIRTS = 150, NUM_LEGS = 120, NUM_SHOES = 100;
 static const char* GENDERS[] = { "Male", "Female" };
 
+// Beard customization constants
+static const int NUM_BEARDS = 29; // Common number of beard styles
+static const int NUM_BEARDCOLORS = 64; // Same as hair colors
+
 // State
 static int gender = 0, dadIdx = 0, momIdx = 0;
 static int blend = 50, skin = 50;
 static int hairIdx = 0, hairColor = 0, eyebrowIdx = 0, eyebrowColor = 0, eyeColor = 0;
+// Beard state variables
+static int beardIdx = 255, beardColor = 0; // Default 255 to disable beard initially
 static float faceFeatures[NUM_FACE_FEATURES] = { 0 };
 static int topIdx = 0, undershirtIdx = 0, legIdx = 0, shoeIdx = 0;
 
@@ -160,8 +164,13 @@ void CharacterCreator_Apply() {
     );
     PED::SET_PED_COMPONENT_VARIATION(ped, 2, hairIdx, 0, 2);
     PED::_SET_PED_HAIR_COLOR(ped, hairColor, 0);
-    PED::SET_PED_HEAD_OVERLAY(ped, 1, eyebrowIdx, 1.0f);
-    PED::_SET_PED_HEAD_OVERLAY_COLOR(ped, 1, 1, eyebrowColor, 0);
+    PED::SET_PED_HEAD_OVERLAY(ped, 2, eyebrowIdx, 1.0f); // Corrected overlayID for Eyebrows
+    PED::_SET_PED_HEAD_OVERLAY_COLOR(ped, 2, 1, eyebrowColor, 0); // Corrected overlayID for Eyebrows Color
+
+    // Apply beard style and color (OverlayID 1 for Facial Hair/Beards)
+    PED::SET_PED_HEAD_OVERLAY(ped, 1, beardIdx, 1.0f);
+    PED::_SET_PED_HEAD_OVERLAY_COLOR(ped, 1, 1, beardColor, 0);
+
     PED::_SET_PED_EYE_COLOR(ped, eyeColor);
     for (int i = 0; i < NUM_FACE_FEATURES; ++i)
         PED::_SET_PED_FACE_FEATURE(ped, i, faceFeatures[i]);
@@ -171,6 +180,15 @@ void CharacterCreator_Apply() {
     PED::SET_PED_COMPONENT_VARIATION(ped, SLOT_UNDERSHIRT, undershirtIdx, undershirtTextureIdx, 2);
     PED::SET_PED_COMPONENT_VARIATION(ped, SLOT_LEGS, legIdx, legTextureIdx, 2);
     PED::SET_PED_COMPONENT_VARIATION(ped, SLOT_SHOES, shoeIdx, shoeTextureIdx, 2);
+
+    // Regarding Torso (ID 3):
+    // The game's clothing system often implicitly updates component 3 (Torso)
+    // when component variations like SLOT_TOP (11) or SLOT_UNDERSHIRT (8) are changed.
+    // Explicitly setting component 3 can lead to glitches or conflicts if not
+    // precisely matched to the current top/undershirt.
+    // For now, we rely on the game's default behavior, and a direct
+    // SET_PED_COMPONENT_VARIATION for component 3 is not added without
+    // a more robust way to determine its correct drawable/texture for every outfit.
 
     // Apply props
     if (hatPropIdx == -1) {
@@ -212,6 +230,8 @@ void CharacterCreator_Save(const char* path) {
     if (!f) return;
     fprintf(f, "gender=%d\ndad=%d\nmom=%d\nblend=%d\nskin=%d\nhair=%d\nhairColor=%d\neyebrow=%d\neyebrowColor=%d\neyeColor=%d\n",
         gender, dadIdx, momIdx, blend, skin, hairIdx, hairColor, eyebrowIdx, eyebrowColor, eyeColor);
+    // ADDED: Save beard data
+    fprintf(f, "beard=%d\nbeardColor=%d\n", beardIdx, beardColor);
     for (int i = 0; i < NUM_FACE_FEATURES; ++i) fprintf(f, "face%d=%.3f\n", i, faceFeatures[i]);
     fprintf(f, "top=%d\nundershirt=%d\nlegs=%d\nshoes=%d\n", topIdx, undershirtIdx, legIdx, shoeIdx);
     // Save new texture indices
@@ -239,6 +259,9 @@ void CharacterCreator_Load(const char* path) {
         else if (strcmp(line, "eyebrow") == 0) eyebrowIdx = atoi(val);
         else if (strcmp(line, "eyebrowColor") == 0) eyebrowColor = atoi(val);
         else if (strcmp(line, "eyeColor") == 0) eyeColor = atoi(val);
+        // ADDED: Load beard data
+        else if (strcmp(line, "beard") == 0) beardIdx = atoi(val);
+        else if (strcmp(line, "beardColor") == 0) beardColor = atoi(val);
         else if (strncmp(line, "face", 4) == 0 && isdigit(line[4])) {
             int idx = atoi(line + 4);
             if (idx >= 0 && idx < NUM_FACE_FEATURES) faceFeatures[idx] = (float)atof(val);
@@ -279,6 +302,28 @@ void CharacterCreator_NextHairStyle(int dir) { hairIdx = (hairIdx + dir + NUM_HA
 void CharacterCreator_NextHairColor(int dir) { hairColor = (hairColor + dir + NUM_HAIRCOLORS) % NUM_HAIRCOLORS; CharacterCreator_Apply(); }
 void CharacterCreator_NextEyebrow(int dir) { eyebrowIdx = (eyebrowIdx + dir + NUM_EYEBROWS) % NUM_EYEBROWS; CharacterCreator_Apply(); }
 void CharacterCreator_NextEyebrowColor(int dir) { eyebrowColor = (eyebrowColor + dir + NUM_EYEBROWCOLORS) % NUM_EYEBROWCOLORS; CharacterCreator_Apply(); }
+
+// Beard modification functions
+void CharacterCreator_NextBeard(int dir) {
+    if (beardIdx == 255 && dir == -1) { // If currently disabled and going backward, go to last beard
+        beardIdx = NUM_BEARDS - 1;
+    }
+    else if (beardIdx == NUM_BEARDS - 1 && dir == 1) { // If last beard and going forward, disable
+        beardIdx = 255;
+    }
+    else if (beardIdx == 255 && dir == 1) { // If currently disabled and going forward, go to first beard
+        beardIdx = 0;
+    }
+    else {
+        beardIdx = (beardIdx + dir + NUM_BEARDS) % NUM_BEARDS;
+    }
+    CharacterCreator_Apply();
+}
+
+void CharacterCreator_NextBeardColor(int dir) {
+    beardColor = (beardColor + dir + NUM_BEARDCOLORS) % NUM_BEARDCOLORS; CharacterCreator_Apply();
+}
+
 void CharacterCreator_NudgeFaceFeature(int idx, float delta) {
     if (idx < 0 || idx >= NUM_FACE_FEATURES) return;
     faceFeatures[idx] = clamp(faceFeatures[idx] + delta, -1.0f, 1.0f);
@@ -498,7 +543,7 @@ void CharacterCreator_DrawMenu(int& menuIndex, int& menuCategory) {
     // Determine the number of options for the current page
     int numOptions = 0;
     if (creatorPage == CREATOR_MAIN) {
-        numOptions = 13; // Main page has 13 options
+        numOptions = 15; // Number of main menu options without tattoos
     }
     else if (creatorPage == CREATOR_FACE) {
         numOptions = NUM_FACE_FEATURES + 1; // Face page has 20 features + Back button
@@ -562,10 +607,10 @@ void CharacterCreator_DrawMenu(int& menuIndex, int& menuCategory) {
 
     if (creatorPage == CREATOR_MAIN) {
         wardrobeCamActive = false; // Ensure wardrobe cam is off on this page
-        const int numMainOptions = 13;
+        const int numMainOptions = 15; // Number of options in the main Character Creator menu
         const char* labels[numMainOptions] = {
             "Creator Camera", "Gender","Dad","Mom","Shape Blend","Skin Blend","Hair Style","Hair Color",
-            "Eyebrows","Eyebrow Color","Eye Color","Face Features","Clothes"
+            "Eyebrows","Eyebrow Color","Beard Style","Beard Color","Eye Color","Face Features","Clothes"
         };
 
         for (int i = 0; i < numMainOptions; ++i) {
@@ -580,9 +625,16 @@ void CharacterCreator_DrawMenu(int& menuIndex, int& menuCategory) {
             else if (i == 7) sprintf_s(val, "< %d >", hairColor);
             else if (i == 8) sprintf_s(val, "< %d >", eyebrowIdx);
             else if (i == 9) sprintf_s(val, "< %d >", eyebrowColor);
-            else if (i == 10) sprintf_s(val, "< %d >", eyeColor);
+            // Display for Beard Style and Color (Corrected format for beardIdx)
+            else if (i == 10) { // Beard Style
+                if (beardIdx == 255) sprintf_s(val, "< None >");
+                else sprintf_s(val, "< %d >", beardIdx);
+            }
+            else if (i == 11) sprintf_s(val, "< %d >", beardColor);
+            else if (i == 12) sprintf_s(val, "< %d >", eyeColor);
 
-            if (i < 11) DrawPairedMenuOption(labels[i], val, x, optionsStartY + h * i, w, h, i == menuIndex);
+
+            if (i < 13) DrawPairedMenuOption(labels[i], val, x, optionsStartY + h * i, w, h, i == menuIndex);
             else DrawMenuOption(labels[i], x, optionsStartY + h * i, w, h, i == menuIndex);
         }
 
@@ -608,13 +660,16 @@ void CharacterCreator_DrawMenu(int& menuIndex, int& menuCategory) {
                 case 7: CharacterCreator_NextHairColor(dir); inputDelayFrames = 10; break;
                 case 8: CharacterCreator_NextEyebrow(dir); inputDelayFrames = 10; break;
                 case 9: CharacterCreator_NextEyebrowColor(dir); inputDelayFrames = 10; break;
-                case 10: CharacterCreator_NextEyeColor(dir); inputDelayFrames = 10; break;
+                    // Beard Style and Color
+                case 10: CharacterCreator_NextBeard(dir); inputDelayFrames = 10; break;
+                case 11: CharacterCreator_NextBeardColor(dir); inputDelayFrames = 10; break;
+                case 12: CharacterCreator_NextEyeColor(dir); inputDelayFrames = 10; break;
                 }
             }
             if (IsKeyJustUp(VK_NUMPAD5) || IsKeyJustUp(VK_RETURN) || PadPressed(BTN_A)) { //
                 if (menuIndex == 0) { creatorCamEnabled = !creatorCamEnabled; inputDelayFrames = 10; }
-                if (menuIndex == 11) { creatorPage = CREATOR_FACE; menuIndex = 0; inputDelayFrames = 10; }
-                if (menuIndex == 12) { creatorPage = CREATOR_CLOTHES; menuIndex = 0; inputDelayFrames = 10; }
+                if (menuIndex == 13) { creatorPage = CREATOR_FACE; menuIndex = 0; inputDelayFrames = 10; }
+                if (menuIndex == 14) { creatorPage = CREATOR_CLOTHES; menuIndex = 0; inputDelayFrames = 10; }
             }
         }
         if (PadPressed(BTN_B) || IsKeyJustUp(VK_ESCAPE) || IsKeyJustUp(VK_BACK)) { //
